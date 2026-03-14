@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Framework V3 — Project Wizard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            primary: {
+              50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+              400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+              800: '#1e40af', 900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .tree-line { font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; }
+    .tree-folder { color: #2563eb; font-weight: 500; }
+    .tree-file { color: #71717a; }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      transform: translateY(100px); opacity: 0; transition: all 0.3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .fade-in { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    textarea, input[type="text"], input[type="date"], select {
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .step-indicator { transition: all 0.2s ease; }
+    .output-content { max-height: 70vh; overflow-y: auto; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    .drag-over::after {
+      content: 'Pust soubor pro import';
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(37, 99, 235, 0.08); border: 3px dashed #2563eb;
+      font-size: 18px; font-weight: 600; color: #2563eb;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900 min-h-screen">
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast bg-zinc-900 text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium"></div>
+
+  <!-- Main layout -->
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-zinc-200 flex-shrink-0 flex flex-col">
+      <div class="p-5 border-b border-zinc-200">
+        <h1 class="text-base font-bold text-zinc-900">Meta Framework V3</h1>
+        <p class="text-xs text-zinc-500 mt-1">Project Structure Wizard</p>
+        <div class="flex gap-2 mt-3">
+          <button onclick="el('importFile').click()" class="flex-1 px-2 py-2 text-xs font-medium border border-dashed border-zinc-300 rounded-md hover:bg-zinc-50 hover:border-primary-400 transition-colors text-zinc-600 flex items-center justify-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            Import .md
+          </button>
+          <button onclick="downloadBlankTemplate()" class="flex-1 px-2 py-2 text-xs font-medium border border-dashed border-zinc-300 rounded-md hover:bg-zinc-50 hover:border-emerald-400 transition-colors text-zinc-600 flex items-center justify-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Stahnout sablonu
+          </button>
+        </div>
+        <input type="file" id="importFile" accept=".md,.txt" class="hidden" onchange="handleImportFile(this)">
+      </div>
+      <!-- Progress bar -->
+      <div class="px-5 py-3 border-b border-zinc-200">
+        <div class="flex justify-between text-xs text-zinc-500 mb-1">
+          <span>Postup</span>
+          <span id="progressLabel">0%</span>
+        </div>
+        <div class="w-full bg-zinc-100 rounded-full h-1.5">
+          <div id="progressBar" class="bg-primary-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+      <!-- Steps -->
+      <nav class="flex-1 overflow-y-auto py-2" id="stepNav"></nav>
+      <!-- Footer -->
+      <div class="p-4 border-t border-zinc-200 text-xs text-zinc-400">
+        <button onclick="resetAll()" class="hover:text-red-500 transition-colors">Reset wizard</button>
+        <span class="mx-2">|</span>
+        <span>V3.0</span>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 flex">
+      <!-- Form area -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="max-w-2xl mx-auto p-8">
+          <div id="stepContent" class="fade-in"></div>
+          <!-- Navigation buttons -->
+          <div class="flex justify-between mt-8 pb-8">
+            <button id="btnPrev" onclick="prevStep()" class="px-4 py-2 text-sm font-medium border border-zinc-200 rounded-md hover:bg-zinc-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              &larr; Zpet
+            </button>
+            <button id="btnNext" onclick="nextStep()" class="px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors">
+              Dalsi &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview panel -->
+      <aside id="previewPanel" class="w-80 bg-white border-l border-zinc-200 flex-shrink-0 overflow-y-auto">
+        <div class="p-4 border-b border-zinc-200">
+          <h3 class="text-sm font-semibold text-zinc-700">Live Preview</h3>
+          <p class="text-xs text-zinc-400 mt-0.5">Struktura projektu</p>
+        </div>
+        <div id="treePreview" class="p-4 tree-line text-xs"></div>
+      </aside>
+    </main>
+  </div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const STORAGE_KEY = 'metaframework-v3-wizard';
+
+const defaultState = {
+  currentStep: 0,
+  metadata: {
+    projectType: 'INT',
+    customer: '',
+    shortName: '',
+    fullName: '',
+    date: new Date().toISOString().slice(0, 10),
+    mode: 'C',
+    knowledgeBase: 'C:\\Users\\licka\\OneDrive - ARICOMA\\Prace\\projekty\\9999Claude',
+    executionBase: 'C:\\DEV\\Claude',
+  },
+  business: {
+    vision: '',
+    value: ['', ''],
+    scopeIn: [''],
+    scopeOut: [''],
+    typeLabel: 'Implementacni',
+    constraints: [''],
+    assumptions: [''],
+    stakeholders: [{ name: '', role: '', responsibility: '' }],
+    customerInfo: '',
+  },
+  knowledge: {
+    governanceOverrides: '',
+    customRules: [''],
+  },
+  architecture: {
+    techStack: '',
+    decisions: [''],
+    createAdr: false,
+    adrTitle: '',
+    adrContext: '',
+    adrDecision: '',
+    adrConsequences: '',
+  },
+  engineering: {
+    codingStandards: '',
+    tools: [''],
+    agents: { changelog: true, mdPostprocessor: false, souhrnGpt: true },
+    skills: { aiMarkdown: true, keepChangelog: true, endSession: true, workItems: false },
+  },
+  plan: {
+    phases: [
+      { name: 'Inicializace', status: 'Hotovo' },
+      { name: '', status: 'Ceka' },
+    ],
+    milestones: [''],
+    risks: [{ risk: '', probability: '', impact: '', mitigation: '' }],
+  },
+  data: {
+    sources: [''],
+    measurement: '',
+    gapTemplate: false,
+  },
+  resource: {
+    references: [{ name: '', url: '', description: '' }],
+    systemAccess: [{ system: '', url: '', accessType: '', note: '' }],
+    manuals: [''],
+  },
+  delivery: {
+    preset: 'Standard',
+    custom: {
+      meetings: true, workItems: true, migration: false, integration: false,
+      testing: false, releaseTransport: false, operations: false,
+    },
+    templates: {
+      businessRequest: true, changeRequest: true, meetingNote: true,
+      meetingScreenshots: true, testCase: true,
+    },
+  },
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return deepMerge(JSON.parse(JSON.stringify(defaultState)), parsed);
+    }
+  } catch (e) { /* ignore */ }
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+}
+
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key]) {
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+function resetAll() {
+  if (confirm('Opravdu resetovat wizard? Vsechna data budou smazana.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    state = JSON.parse(JSON.stringify(defaultState));
+    render();
+  }
+}
+
+// ============================================================
+// STEPS DEFINITION
+// ============================================================
+const steps = [
+  { id: 'metadata', label: 'Metadata', icon: '0' },
+  { id: 'business', label: '01 Business', icon: '1' },
+  { id: 'knowledge', label: '02 Knowledge', icon: '2' },
+  { id: 'architecture', label: '03 Architecture', icon: '3' },
+  { id: 'engineering', label: '04 Engineering', icon: '4' },
+  { id: 'plan', label: '05 Plan', icon: '5' },
+  { id: 'data', label: '06 Data', icon: '6' },
+  { id: 'resource', label: '07 Resource', icon: '7' },
+  { id: 'delivery', label: 'Delivery', icon: 'D' },
+  { id: 'output', label: 'Vystup', icon: '!' },
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function el(id) { return document.getElementById(id); }
+
+function showToast(msg) {
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function getProjectId() {
+  const d = (state.metadata.date || '').replace(/-/g, '').slice(0, 8);
+  const s = state.metadata.shortName || 'KratkyNazev';
+  return `${d}_${s}`;
+}
+
+function getKnowledgeRoot() {
+  const pid = getProjectId();
+  const base = state.metadata.knowledgeBase || 'C:\\Users\\licka\\OneDrive - ARICOMA\\Prace\\projekty\\9999Claude';
+  if (state.metadata.projectType === 'ZAK' && state.metadata.customer) {
+    return `${base}\\Zakaznici\\${state.metadata.customer}\\${pid}`;
+  }
+  return `${base}\\Interni\\${pid}`;
+}
+
+function getExecutionRoot() {
+  const pid = getProjectId();
+  const base = state.metadata.executionBase || 'C:\\DEV\\Claude';
+  if (state.metadata.projectType === 'ZAK' && state.metadata.customer) {
+    return `${base}\\Zakaznici\\${state.metadata.customer}\\${pid}`;
+  }
+  return `${base}\\Interni\\${pid}`;
+}
+
+function inputField(label, value, onInput, opts = {}) {
+  const { type = 'text', placeholder = '', helpText = '', required = false, textarea = false } = opts;
+  const req = required ? '<span class="text-red-500 ml-0.5">*</span>' : '';
+  const help = helpText ? `<p class="text-xs text-zinc-400 mt-1">${helpText}</p>` : '';
+  if (textarea) {
+    return `<div class="mb-4">
+      <label class="block text-sm font-medium text-zinc-700 mb-1.5">${label}${req}</label>
+      <textarea class="w-full border border-zinc-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-y" rows="3" placeholder="${placeholder}" oninput="${onInput}">${escHtml(value)}</textarea>
+      ${help}
+    </div>`;
+  }
+  return `<div class="mb-4">
+    <label class="block text-sm font-medium text-zinc-700 mb-1.5">${label}${req}</label>
+    <input type="${type}" value="${escAttr(value)}" class="w-full border border-zinc-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" placeholder="${placeholder}" oninput="${onInput}">
+    ${help}
+  </div>`;
+}
+
+function selectField(label, value, options, onInput, helpText = '') {
+  const opts = options.map(o => {
+    const val = typeof o === 'string' ? o : o.value;
+    const lbl = typeof o === 'string' ? o : o.label;
+    return `<option value="${escAttr(val)}" ${val === value ? 'selected' : ''}>${escHtml(lbl)}</option>`;
+  }).join('');
+  const help = helpText ? `<p class="text-xs text-zinc-400 mt-1">${helpText}</p>` : '';
+  return `<div class="mb-4">
+    <label class="block text-sm font-medium text-zinc-700 mb-1.5">${label}</label>
+    <select class="w-full border border-zinc-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white" onchange="${onInput}">${opts}</select>
+    ${help}
+  </div>`;
+}
+
+function repeatableField(label, items, pathExpr, helpText = '') {
+  const help = helpText ? `<p class="text-xs text-zinc-400 mt-1 mb-2">${helpText}</p>` : '';
+  let html = `<div class="mb-4"><label class="block text-sm font-medium text-zinc-700 mb-1.5">${label}</label>${help}`;
+  items.forEach((item, i) => {
+    html += `<div class="flex gap-2 mb-2">
+      <input type="text" value="${escAttr(item)}" class="flex-1 border border-zinc-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" oninput="${pathExpr}[${i}]=this.value;saveState();updatePreview();">
+      <button onclick="${pathExpr}.splice(${i},1);if(!${pathExpr}.length)${pathExpr}.push('');saveState();render();" class="px-2 py-1 text-zinc-400 hover:text-red-500 text-sm" title="Odebrat">&times;</button>
+    </div>`;
+  });
+  html += `<button onclick="${pathExpr}.push('');saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium">+ Pridat polozku</button></div>`;
+  return html;
+}
+
+function checkboxField(label, checked, onInput, description = '') {
+  const desc = description ? `<span class="text-xs text-zinc-400 ml-1">${description}</span>` : '';
+  return `<label class="flex items-start gap-2 mb-2 cursor-pointer">
+    <input type="checkbox" ${checked ? 'checked' : ''} onchange="${onInput}" class="mt-0.5 rounded border-zinc-300 text-primary-600 focus:ring-primary-500">
+    <span class="text-sm text-zinc-700">${label}${desc}</span>
+  </label>`;
+}
+
+function sectionHeader(title, description) {
+  return `<div class="mb-6">
+    <h2 class="text-xl font-bold text-zinc-900">${title}</h2>
+    <p class="text-sm text-zinc-500 mt-1">${description}</p>
+  </div>`;
+}
+
+function card(content) {
+  return `<div class="bg-white border border-zinc-200 rounded-lg p-5 mb-4 shadow-sm">${content}</div>`;
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================================
+// STEP RENDERERS
+// ============================================================
+function renderStep0() {
+  const m = state.metadata;
+  let html = `<div class="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div>
+        <p class="text-sm font-medium text-primary-800">Dva zpusoby prace</p>
+        <p class="text-xs text-primary-700 mt-1"><strong>A) Rychly import:</strong> Stahni si prazdnou sablonu tlacitkem <strong>"Stahnout sablonu"</strong> v sidebaru, vyplni ji v editoru a nahraj zpet (<strong>"Import .md"</strong> nebo pretazenim na stranku). Wizard se vyplni a preskoci na vystup.</p>
+        <p class="text-xs text-primary-700 mt-1"><strong>B) Krok za krokem:</strong> Vyplnuj formular primo zde — kazdy krok = jedna vrstva.</p>
+      </div>
+    </div>
+  </div>`;
+  html += sectionHeader('Metadata projektu', 'Zakladni informace o projektu. Urcuji nazev, cesty a typ.');
+
+  html += card(
+    `<div class="mb-4">
+      <label class="block text-sm font-medium text-zinc-700 mb-2">Typ projektu</label>
+      <div class="flex gap-3">
+        <label class="flex items-center gap-2 cursor-pointer px-4 py-2.5 border rounded-md transition-colors ${m.projectType === 'INT' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-zinc-200 hover:bg-zinc-50'}">
+          <input type="radio" name="projType" value="INT" ${m.projectType === 'INT' ? 'checked' : ''} onchange="state.metadata.projectType=this.value;saveState();render();" class="text-primary-600 focus:ring-primary-500">
+          <span class="text-sm font-medium">INT — Interni</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer px-4 py-2.5 border rounded-md transition-colors ${m.projectType === 'ZAK' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-zinc-200 hover:bg-zinc-50'}">
+          <input type="radio" name="projType" value="ZAK" ${m.projectType === 'ZAK' ? 'checked' : ''} onchange="state.metadata.projectType=this.value;saveState();render();" class="text-primary-600 focus:ring-primary-500">
+          <span class="text-sm font-medium">ZAK — Zakaznicky</span>
+        </label>
+      </div>
+    </div>` +
+    (m.projectType === 'ZAK' ? inputField('Zakaznik', m.customer, "state.metadata.customer=this.value;saveState();updatePreview();", { placeholder: 'NovaPaka', helpText: 'Bez mezer, CamelCase', required: true }) : '') +
+    inputField('Kratky nazev', m.shortName, "state.metadata.shortName=this.value;saveState();updatePreview();", { placeholder: 'OptimalizaceSFS', helpText: 'CamelCase, bez mezer. Pouzit i jako nazev slozky.', required: true }) +
+    inputField('Plny nazev', m.fullName, "state.metadata.fullName=this.value;saveState();updatePreview();", { placeholder: 'Optimalizace SFS procesu', helpText: 'Muze obsahovat mezery a diakritiku.', required: true }) +
+    inputField('Datum', m.date, "state.metadata.date=this.value;saveState();updatePreview();", { type: 'date' }) +
+    selectField('Rezim', m.mode, [
+      { value: 'A', label: 'A — Teoreticky (jen knowledge layer)' },
+      { value: 'B', label: 'B — Analyticky (knowledge + data)' },
+      { value: 'C', label: 'C — Implementacni (knowledge + execution)' },
+    ], "state.metadata.mode=this.value;saveState();updatePreview();")
+  );
+
+  html += card(
+    inputField('Knowledge base', m.knowledgeBase, "state.metadata.knowledgeBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\Users\\...\\9999Claude', helpText: 'Korenova cesta pro knowledge layer (OneDrive). Podslozka Interni/Zakaznici se doplni automaticky.' }) +
+    inputField('Execution base', m.executionBase, "state.metadata.executionBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\DEV\\Claude', helpText: 'Korenova cesta pro execution layer (lokalni disk). Podslozka Interni/Zakaznici se doplni automaticky.' })
+  );
+
+  // Derived paths
+  html += `<div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-xs font-mono">
+    <div class="mb-2"><span class="text-zinc-500">PROJECT_ID:</span> <span class="text-zinc-800 font-semibold">${escHtml(getProjectId())}</span></div>
+    <div class="mb-2"><span class="text-zinc-500">KNOWLEDGE:</span> <span class="text-zinc-700">${escHtml(getKnowledgeRoot())}</span></div>
+    <div><span class="text-zinc-500">EXECUTION:</span> <span class="text-zinc-700">${escHtml(getExecutionRoot())}</span></div>
+  </div>`;
+
+  return html;
+}
+
+function renderStep1() {
+  const b = state.business;
+  let html = sectionHeader('01 BUSINESS — PROC (Why)', 'Proc projekt existuje, co prinasi, co zahrnuje a co ne.');
+
+  html += card(
+    inputField('Vision', b.vision, "state.business.vision=this.value;saveState();", { textarea: true, placeholder: 'Proc tento projekt existuje a co chceme dosahnout.', helpText: '1-2 vety.', required: true }) +
+    repeatableField('Value / Benefits', b.value, 'state.business.value', 'Co projekt prinasi. Min. 2 polozky.') +
+    repeatableField('Scope IN', b.scopeIn, 'state.business.scopeIn', 'Co je soucasti projektu. Min. 1 polozka.') +
+    repeatableField('Scope OUT', b.scopeOut, 'state.business.scopeOut', 'Co explicitne neni soucasti projektu.') +
+    selectField('Typ projektu', b.typeLabel, ['Implementacni', 'Teoreticky', 'Analyticky'], "state.business.typeLabel=this.value;saveState();") +
+    repeatableField('Constraints', b.constraints, 'state.business.constraints', 'Omezeni (technicka, organizacni, casova).') +
+    repeatableField('Assumptions', b.assumptions, 'state.business.assumptions', 'Predpoklady, na kterych projekt stavi.')
+  );
+
+  // Stakeholders
+  let stakeholderRows = '';
+  b.stakeholders.forEach((s, i) => {
+    stakeholderRows += `<tr>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.name)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Jmeno" oninput="state.business.stakeholders[${i}].name=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.role)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Role" oninput="state.business.stakeholders[${i}].role=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.responsibility)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Zodpovednost" oninput="state.business.stakeholders[${i}].responsibility=this.value;saveState();"></td>
+      <td class="pb-2"><button onclick="state.business.stakeholders.splice(${i},1);if(!state.business.stakeholders.length)state.business.stakeholders.push({name:'',role:'',responsibility:''});saveState();render();" class="text-zinc-400 hover:text-red-500">&times;</button></td>
+    </tr>`;
+  });
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">Stakeholders</label>
+    <p class="text-xs text-zinc-400 mb-2">Klicove osoby projektu. Nepovinne.</p>
+    <table class="w-full"><thead><tr class="text-xs text-zinc-500"><th class="text-left pb-1">Jmeno</th><th class="text-left pb-1">Role</th><th class="text-left pb-1">Zodpovednost</th><th></th></tr></thead><tbody>${stakeholderRows}</tbody></table>
+    <button onclick="state.business.stakeholders.push({name:'',role:'',responsibility:''});saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1">+ Pridat osobu</button>` +
+    (state.metadata.projectType === 'ZAK' ?
+      inputField('Customer Info', b.customerInfo, "state.business.customerInfo=this.value;saveState();", { textarea: true, placeholder: 'Informace o zakaznikovi relevantni pro projekt.', helpText: 'Pouze pro ZAK projekty.' })
+    : '')
+  );
+
+  return html;
+}
+
+function renderStep2() {
+  const k = state.knowledge;
+  let html = sectionHeader('02 KNOWLEDGE — CO (What)', 'Co system je, jak funguje governance.');
+
+  html += card(
+    inputField('Governance overrides', k.governanceOverrides, "state.knowledge.governanceOverrides=this.value;saveState();", { textarea: true, placeholder: 'Zmeny oproti vychozim pravidlum. Nechte prazdne pro vychozi.', helpText: 'Vychozi: top-down dependency, ADR append-only, EXECUTION_SNAPSHOT facts only.' }) +
+    repeatableField('Custom rules', k.customRules, 'state.knowledge.customRules', 'Dalsi pravidla specificka pro tento projekt.')
+  );
+
+  return html;
+}
+
+function renderStep3() {
+  const a = state.architecture;
+  let html = sectionHeader('03 ARCHITECTURE — JAK (How)', 'Jak je system navrzen, jake technologie pouziva.');
+
+  html += card(
+    inputField('Technology stack', a.techStack, "state.architecture.techStack=this.value;saveState();", { textarea: true, placeholder: 'Hlavni technologie a frameworky.', helpText: 'Napr. SAPUI5 + OData, React + Node.js, PowerShell...' }) +
+    repeatableField('Structural decisions', a.decisions, 'state.architecture.decisions', 'Klicova architektonicka rozhodnuti.')
+  );
+
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">Prvni ADR (Architectural Decision Record)</label>` +
+    checkboxField('Vytvorit ADR-001', a.createAdr, "state.architecture.createAdr=this.checked;saveState();render();") +
+    (a.createAdr ? (
+      inputField('Nazev', a.adrTitle, "state.architecture.adrTitle=this.value;saveState();", { placeholder: 'ADR-001: Volba architektury' }) +
+      inputField('Kontext', a.adrContext, "state.architecture.adrContext=this.value;saveState();", { textarea: true, placeholder: 'Proc jsme toto resili.' }) +
+      inputField('Rozhodnuti', a.adrDecision, "state.architecture.adrDecision=this.value;saveState();", { textarea: true, placeholder: 'Co jsme zvolili a proc.' }) +
+      inputField('Dusledky', a.adrConsequences, "state.architecture.adrConsequences=this.value;saveState();", { textarea: true, placeholder: 'Co tim ziskavame a co obetueme.' })
+    ) : '')
+  );
+
+  return html;
+}
+
+function renderStep4() {
+  const e = state.engineering;
+  let html = sectionHeader('04 ENGINEERING — CIM (With what)', 'Cim se realizuje, jake nastroje a standardy.');
+
+  html += card(
+    inputField('Coding standards', e.codingStandards, "state.engineering.codingStandards=this.value;saveState();", { textarea: true, placeholder: 'Reference na coding standardy. Nechte prazdne pro vychozi z CLAUDE.md.', helpText: 'Vychozi: SOLID, DRY, self-explanatory names, explicit error handling.' }) +
+    repeatableField('Tools', e.tools, 'state.engineering.tools', 'Nastroje pouzivane v projektu.')
+  );
+
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-3">Agents</label>` +
+    checkboxField('changelog-manager', e.agents.changelog, "state.engineering.agents.changelog=this.checked;saveState();", '— automaticky aktualizuje CHANGELOG.md') +
+    checkboxField('md-postprocessor', e.agents.mdPostprocessor, "state.engineering.agents.mdPostprocessor=this.checked;saveState();", '— normalizace Markdown') +
+    checkboxField('souhrn-gpt-updater', e.agents.souhrnGpt, "state.engineering.agents.souhrnGpt=this.checked;saveState();", '— generuje souhrnGPT.md') +
+    `<label class="block text-sm font-medium text-zinc-700 mb-3 mt-5">Skills</label>` +
+    checkboxField('ai-readable-markdown', e.skills.aiMarkdown, "state.engineering.skills.aiMarkdown=this.checked;saveState();", '— styl normalizace') +
+    checkboxField('keep-a-changelog-standard', e.skills.keepChangelog, "state.engineering.skills.keepChangelog=this.checked;saveState();", '— CHANGELOG metodika') +
+    checkboxField('zvl_end-session', e.skills.endSession, "state.engineering.skills.endSession=this.checked;saveState();", '— session closure protocol') +
+    checkboxField('zvl_work-items', e.skills.workItems, "state.engineering.skills.workItems=this.checked;saveState();", '— sprava work items')
+  );
+
+  return html;
+}
+
+function renderStep5() {
+  const p = state.plan;
+  let html = sectionHeader('05 PLAN — KDY (When)', 'Kdy co nastane, jake jsou faze a milniky.');
+
+  // Phases
+  let phaseRows = '';
+  p.phases.forEach((ph, i) => {
+    phaseRows += `<tr>
+      <td class="pr-2 pb-2 text-sm text-zinc-500 w-8">${i + 1}</td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(ph.name)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Nazev faze" oninput="state.plan.phases[${i}].name=this.value;saveState();"></td>
+      <td class="pr-2 pb-2">
+        <select class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm bg-white" onchange="state.plan.phases[${i}].status=this.value;saveState();">
+          <option value="Hotovo" ${ph.status === 'Hotovo' ? 'selected' : ''}>Hotovo</option>
+          <option value="Probihajici" ${ph.status === 'Probihajici' ? 'selected' : ''}>Probihajici</option>
+          <option value="Ceka" ${ph.status === 'Ceka' ? 'selected' : ''}>Ceka</option>
+        </select>
+      </td>
+      <td class="pb-2"><button onclick="state.plan.phases.splice(${i},1);if(!state.plan.phases.length)state.plan.phases.push({name:'',status:'Ceka'});saveState();render();" class="text-zinc-400 hover:text-red-500">&times;</button></td>
+    </tr>`;
+  });
+
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">Faze projektu</label>
+    <table class="w-full"><thead><tr class="text-xs text-zinc-500"><th class="text-left pb-1">#</th><th class="text-left pb-1">Nazev</th><th class="text-left pb-1">Stav</th><th></th></tr></thead><tbody>${phaseRows}</tbody></table>
+    <button onclick="state.plan.phases.push({name:'',status:'Ceka'});saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1">+ Pridat fazi</button>`
+  );
+
+  html += card(
+    repeatableField('Milniky', p.milestones, 'state.plan.milestones', 'Klicove milniky s datem.')
+  );
+
+  // Risks
+  let riskRows = '';
+  p.risks.forEach((r, i) => {
+    riskRows += `<tr>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(r.risk)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Riziko" oninput="state.plan.risks[${i}].risk=this.value;saveState();"></td>
+      <td class="pr-2 pb-2">
+        <select class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm bg-white" onchange="state.plan.risks[${i}].probability=this.value;saveState();">
+          <option value="">-</option><option value="N" ${r.probability==='N'?'selected':''}>N</option><option value="S" ${r.probability==='S'?'selected':''}>S</option><option value="V" ${r.probability==='V'?'selected':''}>V</option>
+        </select>
+      </td>
+      <td class="pr-2 pb-2">
+        <select class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm bg-white" onchange="state.plan.risks[${i}].impact=this.value;saveState();">
+          <option value="">-</option><option value="N" ${r.impact==='N'?'selected':''}>N</option><option value="S" ${r.impact==='S'?'selected':''}>S</option><option value="V" ${r.impact==='V'?'selected':''}>V</option>
+        </select>
+      </td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(r.mitigation)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Mitigace" oninput="state.plan.risks[${i}].mitigation=this.value;saveState();"></td>
+      <td class="pb-2"><button onclick="state.plan.risks.splice(${i},1);if(!state.plan.risks.length)state.plan.risks.push({risk:'',probability:'',impact:'',mitigation:''});saveState();render();" class="text-zinc-400 hover:text-red-500">&times;</button></td>
+    </tr>`;
+  });
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">Rizika</label>
+    <table class="w-full"><thead><tr class="text-xs text-zinc-500"><th class="text-left pb-1">Riziko</th><th class="text-left pb-1 w-12">P</th><th class="text-left pb-1 w-12">D</th><th class="text-left pb-1">Mitigace</th><th></th></tr></thead><tbody>${riskRows}</tbody></table>
+    <button onclick="state.plan.risks.push({risk:'',probability:'',impact:'',mitigation:''});saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1">+ Pridat riziko</button>`
+  );
+
+  return html;
+}
+
+function renderStep6() {
+  const d = state.data;
+  let html = sectionHeader('06 DATA — Fakta', 'Co bylo zmereno, zjisteno, exportovano.');
+
+  html += card(
+    repeatableField('Datove zdroje', d.sources, 'state.data.sources', 'Zdroje dat pro projekt.') +
+    inputField('Pristup k mereni', d.measurement, "state.data.measurement=this.value;saveState();", { textarea: true, placeholder: 'Jak se meri uspech/postup projektu.' }) +
+    checkboxField('Zahrnout GAP template', d.gapTemplate, "state.data.gapTemplate=this.checked;saveState();", '(doporuceno pro ZAK projekty)')
+  );
+
+  return html;
+}
+
+function renderStep7() {
+  const r = state.resource;
+  let html = sectionHeader('07 RESOURCE — Vstupy', 'Externi zdroje, reference, systemovy pristup.');
+
+  // References
+  let refRows = '';
+  r.references.forEach((ref, i) => {
+    refRows += `<tr>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(ref.name)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Nazev" oninput="state.resource.references[${i}].name=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(ref.url)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="URL/Cesta" oninput="state.resource.references[${i}].url=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(ref.description)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Popis" oninput="state.resource.references[${i}].description=this.value;saveState();"></td>
+      <td class="pb-2"><button onclick="state.resource.references.splice(${i},1);if(!state.resource.references.length)state.resource.references.push({name:'',url:'',description:''});saveState();render();" class="text-zinc-400 hover:text-red-500">&times;</button></td>
+    </tr>`;
+  });
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">Externi reference</label>
+    <table class="w-full"><thead><tr class="text-xs text-zinc-500"><th class="text-left pb-1">Nazev</th><th class="text-left pb-1">URL/Cesta</th><th class="text-left pb-1">Popis</th><th></th></tr></thead><tbody>${refRows}</tbody></table>
+    <button onclick="state.resource.references.push({name:'',url:'',description:''});saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1">+ Pridat referenci</button>`
+  );
+
+  // System access
+  let sysRows = '';
+  r.systemAccess.forEach((s, i) => {
+    sysRows += `<tr>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.system)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="System" oninput="state.resource.systemAccess[${i}].system=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.url)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="URL" oninput="state.resource.systemAccess[${i}].url=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.accessType)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Typ" oninput="state.resource.systemAccess[${i}].accessType=this.value;saveState();"></td>
+      <td class="pr-2 pb-2"><input type="text" value="${escAttr(s.note)}" class="w-full border border-zinc-300 rounded-md px-2 py-1.5 text-sm" placeholder="Poznamka" oninput="state.resource.systemAccess[${i}].note=this.value;saveState();"></td>
+      <td class="pb-2"><button onclick="state.resource.systemAccess.splice(${i},1);if(!state.resource.systemAccess.length)state.resource.systemAccess.push({system:'',url:'',accessType:'',note:''});saveState();render();" class="text-zinc-400 hover:text-red-500">&times;</button></td>
+    </tr>`;
+  });
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-2">System access</label>
+    <table class="w-full"><thead><tr class="text-xs text-zinc-500"><th class="text-left pb-1">System</th><th class="text-left pb-1">URL</th><th class="text-left pb-1">Typ</th><th class="text-left pb-1">Poznamka</th><th></th></tr></thead><tbody>${sysRows}</tbody></table>
+    <button onclick="state.resource.systemAccess.push({system:'',url:'',accessType:'',note:''});saveState();render();" class="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1">+ Pridat system</button>`
+  );
+
+  html += card(repeatableField('Manualy', r.manuals, 'state.resource.manuals', 'Manualy a externi dokumentace.'));
+
+  return html;
+}
+
+function renderStep8() {
+  const d = state.delivery;
+  let html = sectionHeader('Delivery konfigurace', 'Konfigurace delivery/operational vrstvy projektu.');
+
+  const presets = ['Minimal', 'Standard', 'Full SAP', 'Custom'];
+  const presetDescs = {
+    'Minimal': 'Jen 00_PROJECT_CONTROL + 99_ARCHIVE. Pro teoreticke projekty.',
+    'Standard': '+ 10_DELIVERY (meetings, work items) + 20_SHARED_REFERENCE.',
+    'Full SAP': '+ kompletni migration, integration, testing podsekce.',
+    'Custom': 'Vlastni vyber delivery sekci.',
+  };
+
+  let presetHtml = '<div class="space-y-2 mb-4">';
+  presets.forEach(p => {
+    presetHtml += `<label class="flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors ${d.preset === p ? 'border-primary-500 bg-primary-50' : 'border-zinc-200 hover:bg-zinc-50'}">
+      <input type="radio" name="deliveryPreset" value="${p}" ${d.preset === p ? 'checked' : ''} onchange="state.delivery.preset=this.value;applyPreset(this.value);saveState();render();" class="mt-0.5 text-primary-600 focus:ring-primary-500">
+      <div><div class="text-sm font-medium text-zinc-800">${p}</div><div class="text-xs text-zinc-500">${presetDescs[p]}</div></div>
+    </label>`;
+  });
+  presetHtml += '</div>';
+
+  html += card(presetHtml);
+
+  if (d.preset === 'Custom') {
+    html += card(
+      `<label class="block text-sm font-medium text-zinc-700 mb-3">Delivery sekce</label>` +
+      checkboxField('11_MEETINGS', d.custom.meetings, "state.delivery.custom.meetings=this.checked;saveState();updatePreview();", '— meeting notes') +
+      checkboxField('12_WORK_ITEMS', d.custom.workItems, "state.delivery.custom.workItems=this.checked;saveState();updatePreview();", '— business requests, specs, tasks') +
+      checkboxField('13_MIGRATION', d.custom.migration, "state.delivery.custom.migration=this.checked;saveState();updatePreview();", '— scope, objects, mapping, cutover') +
+      checkboxField('14_INTEGRATION', d.custom.integration, "state.delivery.custom.integration=this.checked;saveState();updatePreview();", '— interface catalog, API specs') +
+      checkboxField('15_TESTING', d.custom.testing, "state.delivery.custom.testing=this.checked;saveState();updatePreview();", '— test strategy, cases, runs, defects') +
+      checkboxField('16_RELEASE_TRANSPORT', d.custom.releaseTransport, "state.delivery.custom.releaseTransport=this.checked;saveState();updatePreview();", '— transport plan, runbook') +
+      checkboxField('17_OPERATIONS', d.custom.operations, "state.delivery.custom.operations=this.checked;saveState();updatePreview();", '— authorizations, monitoring')
+    );
+  }
+
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-3">Sablony (21_TEMPLATES)</label>` +
+    checkboxField('business-request-template.md', d.templates.businessRequest, "state.delivery.templates.businessRequest=this.checked;saveState();updatePreview();") +
+    checkboxField('change-request-template.md', d.templates.changeRequest, "state.delivery.templates.changeRequest=this.checked;saveState();updatePreview();") +
+    checkboxField('meeting-note-template.md', d.templates.meetingNote, "state.delivery.templates.meetingNote=this.checked;saveState();updatePreview();") +
+    checkboxField('meeting-screenshots-template.md', d.templates.meetingScreenshots, "state.delivery.templates.meetingScreenshots=this.checked;saveState();updatePreview();") +
+    checkboxField('test-case-template.md', d.templates.testCase, "state.delivery.templates.testCase=this.checked;saveState();updatePreview();")
+  );
+
+  return html;
+}
+
+function renderStep9() {
+  let html = sectionHeader('Vystup', 'Vygenerovany vystup. Zkopirujte prompt.');
+
+  // Tabs
+  html += `<div class="flex border-b border-zinc-200 mb-4">
+    <button onclick="setOutputTab(0)" id="outTab0" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors">Strom</button>
+    <button onclick="setOutputTab(1)" id="outTab1" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors">Claude Code Prompt</button>
+  </div>`;
+
+  html += `<div id="outputPanel" class="bg-white border border-zinc-200 rounded-lg shadow-sm"></div>`;
+
+  return html;
+}
+
+let activeOutputTab = 0;
+
+function setOutputTab(idx) {
+  activeOutputTab = idx;
+  for (let i = 0; i < 2; i++) {
+    const tab = el('outTab' + i);
+    if (i === idx) {
+      tab.className = 'px-4 py-2 text-sm font-medium border-b-2 border-primary-600 text-primary-700 transition-colors';
+    } else {
+      tab.className = 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-zinc-500 hover:text-zinc-700 transition-colors';
+    }
+  }
+  renderOutputPanel();
+}
+
+function renderOutputPanel() {
+  const panel = el('outputPanel');
+  if (!panel) return;
+
+  if (activeOutputTab === 0) {
+    panel.innerHTML = `<div class="p-5 output-content tree-line">${buildTreeHtml()}</div>`;
+  } else {
+    const prompt = generateClaudePrompt();
+    panel.innerHTML = `<div class="p-4">
+      <div class="flex gap-2 mb-3">
+        <button onclick="copyText(generateClaudePrompt())" class="px-3 py-1.5 text-xs font-medium bg-zinc-900 text-white rounded-md hover:bg-zinc-800">Kopirovat prompt</button>
+      </div>
+      <pre class="output-content bg-zinc-50 border border-zinc-200 rounded-md p-4 text-xs text-zinc-700 font-mono">${escHtml(prompt)}</pre>
+    </div>`;
+  }
+}
+
+// ============================================================
+// DELIVERY PRESETS
+// ============================================================
+function applyPreset(preset) {
+  const c = state.delivery.custom;
+  switch (preset) {
+    case 'Minimal':
+      c.meetings = false; c.workItems = false; c.migration = false;
+      c.integration = false; c.testing = false; c.releaseTransport = false; c.operations = false;
+      break;
+    case 'Standard':
+      c.meetings = true; c.workItems = true; c.migration = false;
+      c.integration = false; c.testing = false; c.releaseTransport = false; c.operations = false;
+      break;
+    case 'Full SAP':
+      c.meetings = true; c.workItems = true; c.migration = true;
+      c.integration = true; c.testing = true; c.releaseTransport = true; c.operations = true;
+      break;
+  }
+}
+
+function getActiveDelivery() {
+  const d = state.delivery;
+  if (d.preset === 'Minimal') return {};
+  const c = d.preset === 'Custom' ? d.custom : (() => { applyPreset(d.preset); return d.custom; })();
+  return c;
+}
+
+// ============================================================
+// TREE BUILDER
+// ============================================================
+function buildTree() {
+  const pid = getProjectId();
+  const name = state.metadata.fullName || pid;
+  const del = getActiveDelivery();
+
+  const tree = { name: pid, type: 'dir', children: [] };
+
+  // .claude
+  const claude = { name: '.claude', type: 'dir', children: [] };
+  const agents = { name: 'agents', type: 'dir', children: [] };
+  if (state.engineering.agents.changelog) agents.children.push({ name: 'changelog-manager', type: 'dir', children: [] });
+  if (state.engineering.agents.mdPostprocessor) agents.children.push({ name: 'md-postprocessor', type: 'dir', children: [] });
+  if (agents.children.length) claude.children.push(agents);
+  const skills = { name: 'skills', type: 'dir', children: [] };
+  if (state.engineering.skills.aiMarkdown) skills.children.push({ name: 'ai-readable-markdown', type: 'dir', children: [] });
+  if (state.engineering.skills.keepChangelog) skills.children.push({ name: 'keep-a-changelog-standard', type: 'dir', children: [] });
+  if (state.engineering.skills.endSession) skills.children.push({ name: 'zvl_end-session', type: 'dir', children: [] });
+  if (state.engineering.skills.workItems) skills.children.push({ name: 'zvl_work-items', type: 'dir', children: [] });
+  if (skills.children.length) claude.children.push(skills);
+  claude.children.push({ name: 'hooks', type: 'dir', children: [] });
+  claude.children.push({ name: 'settings.json', type: 'file' });
+  tree.children.push(claude);
+
+  // 00_PROJECT_CONTROL
+  const pc = { name: '00_PROJECT_CONTROL', type: 'dir', children: [] };
+  pc.children.push({ name: '01_BUSINESS', type: 'dir', children: [
+    { name: 'BUSINESS.md', type: 'file' },
+    { name: 'stakeholders.md', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: '02_KNOWLEDGE', type: 'dir', children: [
+    { name: 'KNOWLEDGE.md', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: '03_ARCHITECTURE', type: 'dir', children: [
+    { name: 'ARCHITECTURE.md', type: 'file' },
+    { name: 'ADR', type: 'dir', children: state.architecture.createAdr ? [{ name: 'ADR-001.md', type: 'file' }] : [] },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: '04_ENGINEERING', type: 'dir', children: [
+    { name: 'ENGINEERING.md', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: '05_PLAN', type: 'dir', children: [
+    { name: 'PLAN.md', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: '06_DATA', type: 'dir', children: [
+    { name: 'DATA.md', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  const resChildren = [
+    { name: 'RESOURCE.md', type: 'file' },
+    { name: 'SYSTEM_ACCESS.md', type: 'file' },
+    { name: 'prompty', type: 'dir', children: [] },
+    { name: 'README.md', type: 'file' },
+  ];
+  pc.children.push({ name: '07_RESOURCE', type: 'dir', children: resChildren });
+  pc.children.push({ name: '08_DEV', type: 'dir', children: [
+    { name: 'ExecutionLayer.lnk', type: 'file' },
+    { name: 'README.md', type: 'file' },
+  ]});
+  pc.children.push({ name: 'README.md', type: 'file' });
+  tree.children.push(pc);
+
+  // 10_DELIVERY
+  if (state.delivery.preset !== 'Minimal') {
+    const delivery = { name: '10_DELIVERY', type: 'dir', children: [] };
+    if (del.meetings) delivery.children.push({ name: '11_MEETINGS', type: 'dir', children: [] });
+    if (del.workItems) delivery.children.push({ name: '12_WORK_ITEMS', type: 'dir', children: [
+      { name: '01_BUSINESS_REQUESTS', type: 'dir', children: [] },
+      { name: '02_FUNCTIONAL_SPECS', type: 'dir', children: [] },
+      { name: '03_TECHNICAL_SPECS', type: 'dir', children: [] },
+      { name: '04_DEV_TASKS', type: 'dir', children: [] },
+      { name: '05_CHANGE_REQUESTS', type: 'dir', children: [] },
+    ]});
+    if (del.migration) delivery.children.push({ name: '13_MIGRATION', type: 'dir', children: [
+      { name: '01_SCOPE', type: 'dir', children: [] }, { name: '02_OBJECTS', type: 'dir', children: [] },
+      { name: '03_MAPPING', type: 'dir', children: [] }, { name: '04_TEMPLATES', type: 'dir', children: [] },
+      { name: '05_MOCK_LOADS', type: 'dir', children: [] }, { name: '06_RECONCILIATION', type: 'dir', children: [] },
+      { name: '07_CUTOVER', type: 'dir', children: [] },
+    ]});
+    if (del.integration) delivery.children.push({ name: '14_INTEGRATION', type: 'dir', children: [
+      { name: '01_INTERFACE_CATALOG', type: 'dir', children: [] }, { name: '02_API_SPECS', type: 'dir', children: [] },
+      { name: '03_FIELD_MAPPING', type: 'dir', children: [] }, { name: '04_TEST_EVIDENCE', type: 'dir', children: [] },
+    ]});
+    if (del.testing) delivery.children.push({ name: '15_TESTING', type: 'dir', children: [
+      { name: '01_TEST_STRATEGY', type: 'dir', children: [] }, { name: '02_TEST_CASES', type: 'dir', children: [] },
+      { name: '03_TEST_DATA', type: 'dir', children: [] }, { name: '04_DEFECTS', type: 'dir', children: [] },
+      { name: '05_UAT', type: 'dir', children: [] }, { name: '06_TEST_RUNS', type: 'dir', children: [] },
+    ]});
+    if (del.releaseTransport) delivery.children.push({ name: '16_RELEASE_TRANSPORT', type: 'dir', children: [] });
+    if (del.operations) delivery.children.push({ name: '17_OPERATIONS', type: 'dir', children: [] });
+    if (delivery.children.length) tree.children.push(delivery);
+  }
+
+  // 20_SHARED_REFERENCE
+  if (state.delivery.preset !== 'Minimal') {
+    const tpls = [];
+    const t = state.delivery.templates;
+    if (t.businessRequest) tpls.push({ name: 'business-request-template.md', type: 'file' });
+    if (t.changeRequest) tpls.push({ name: 'change-request-template.md', type: 'file' });
+    if (t.meetingNote) tpls.push({ name: 'meeting-note-template.md', type: 'file' });
+    if (t.meetingScreenshots) tpls.push({ name: 'meeting-screenshots-template.md', type: 'file' });
+    if (t.testCase) tpls.push({ name: 'test-case-template.md', type: 'file' });
+    tree.children.push({ name: '20_SHARED_REFERENCE', type: 'dir', children: [
+      { name: '21_TEMPLATES', type: 'dir', children: tpls },
+    ]});
+  }
+
+  // 99_ARCHIVE
+  tree.children.push({ name: '99_ARCHIVE', type: 'dir', children: [] });
+
+  // Root files
+  tree.children.push({ name: 'README.md', type: 'file' });
+  tree.children.push({ name: 'CLAUDE.md', type: 'file' });
+  tree.children.push({ name: 'CHANGELOG.md', type: 'file' });
+  tree.children.push({ name: 'EXECUTION_SNAPSHOT.md', type: 'file' });
+  tree.children.push({ name: 'PROJECT_STATUS.md', type: 'file' });
+  tree.children.push({ name: 'PROJECT_HISTORY.md', type: 'file' });
+  tree.children.push({ name: 'Todo.md', type: 'file' });
+  tree.children.push({ name: 'souhrnGPT.md', type: 'file' });
+
+  return tree;
+}
+
+function buildTreeHtml(node, prefix, isLast) {
+  if (!node) node = buildTree();
+  if (prefix === undefined) {
+    // Root
+    let html = `<div class="tree-folder font-bold">${escHtml(node.name)}/</div>`;
+    const children = node.children || [];
+    children.forEach((child, i) => {
+      html += buildTreeHtml(child, '', i === children.length - 1);
+    });
+    return html;
+  }
+
+  const connector = isLast ? '\u2514\u2500\u2500 ' : '\u251C\u2500\u2500 ';
+  const extension = isLast ? '    ' : '\u2502   ';
+  const cls = node.type === 'dir' ? 'tree-folder' : 'tree-file';
+  const suffix = node.type === 'dir' ? '/' : '';
+  let html = `<div><span class="text-zinc-300">${escHtml(prefix + connector)}</span><span class="${cls}">${escHtml(node.name)}${suffix}</span></div>`;
+
+  if (node.children) {
+    node.children.forEach((child, i) => {
+      html += buildTreeHtml(child, prefix + extension, i === node.children.length - 1);
+    });
+  }
+
+  return html;
+}
+
+// ============================================================
+// OUTPUT GENERATORS
+// ============================================================
+function filterNonEmpty(arr) { return (arr || []).filter(s => s && s.trim()); }
+function bulletList(arr, fallback) {
+  const items = filterNonEmpty(arr);
+  return items.length ? items.map(i => `- ${i}`).join('\n') : fallback || '_Neuvedeno._';
+}
+
+function generateClaudePrompt() {
+  const m = state.metadata;
+  const b = state.business;
+  const pid = getProjectId();
+  const kRoot = getKnowledgeRoot();
+  const eRoot = getExecutionRoot();
+  const today = m.date || new Date().toISOString().slice(0, 10);
+  const del = getActiveDelivery();
+
+  let prompt = `Vytvor kompletni projektovou strukturu Meta Framework V3 pro projekt "${m.fullName || pid}".
+
+## Metadata
+- PROJECT_ID: ${pid}
+- PROJECT_NAME: ${m.fullName || pid}
+- DATE: ${today}
+- PROJECT_TYPE: ${m.projectType}${m.projectType === 'ZAK' ? `\n- CUSTOMER: ${m.customer}` : ''}
+- INITIAL_MODE: ${m.mode}
+- KNOWLEDGE_ROOT: ${kRoot}
+- EXECUTION_ROOT: ${eRoot}
+
+## Knowledge Layer: ${kRoot}
+
+### Adresarova struktura
+Vytvor nasledujici slozky:
+`;
+
+  // Collect all dirs
+  const dirs = [
+    '.claude/agents', '.claude/skills', '.claude/hooks',
+    '00_PROJECT_CONTROL/01_BUSINESS',
+    '00_PROJECT_CONTROL/02_KNOWLEDGE',
+    '00_PROJECT_CONTROL/03_ARCHITECTURE',
+    '00_PROJECT_CONTROL/03_ARCHITECTURE/ADR',
+    '00_PROJECT_CONTROL/04_ENGINEERING',
+    '00_PROJECT_CONTROL/05_PLAN',
+    '00_PROJECT_CONTROL/06_DATA',
+    '00_PROJECT_CONTROL/07_RESOURCE',
+    '00_PROJECT_CONTROL/07_RESOURCE/prompty',
+    '00_PROJECT_CONTROL/08_DEV',
+  ];
+
+  if (state.delivery.preset !== 'Minimal') {
+    if (del.meetings) dirs.push('10_DELIVERY/11_MEETINGS');
+    if (del.workItems) {
+      dirs.push('10_DELIVERY/12_WORK_ITEMS/01_BUSINESS_REQUESTS', '10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS',
+        '10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS', '10_DELIVERY/12_WORK_ITEMS/04_DEV_TASKS',
+        '10_DELIVERY/12_WORK_ITEMS/05_CHANGE_REQUESTS');
+    }
+    if (del.migration) {
+      for (let i = 1; i <= 7; i++) dirs.push(`10_DELIVERY/13_MIGRATION/0${i}_${['SCOPE','OBJECTS','MAPPING','TEMPLATES','MOCK_LOADS','RECONCILIATION','CUTOVER'][i-1]}`);
+    }
+    if (del.integration) {
+      dirs.push('10_DELIVERY/14_INTEGRATION/01_INTERFACE_CATALOG', '10_DELIVERY/14_INTEGRATION/02_API_SPECS',
+        '10_DELIVERY/14_INTEGRATION/03_FIELD_MAPPING', '10_DELIVERY/14_INTEGRATION/04_TEST_EVIDENCE');
+    }
+    if (del.testing) {
+      dirs.push('10_DELIVERY/15_TESTING/01_TEST_STRATEGY', '10_DELIVERY/15_TESTING/02_TEST_CASES',
+        '10_DELIVERY/15_TESTING/03_TEST_DATA', '10_DELIVERY/15_TESTING/04_DEFECTS',
+        '10_DELIVERY/15_TESTING/05_UAT', '10_DELIVERY/15_TESTING/06_TEST_RUNS');
+    }
+    if (del.releaseTransport) dirs.push('10_DELIVERY/16_RELEASE_TRANSPORT');
+    if (del.operations) dirs.push('10_DELIVERY/17_OPERATIONS');
+    dirs.push('20_SHARED_REFERENCE/21_TEMPLATES');
+  }
+  dirs.push('99_ARCHIVE');
+
+  prompt += dirs.map(d => `- ${d}`).join('\n');
+
+  // Files
+  prompt += `
+
+### Soubory k vytvoreni
+
+#### README.md (root)
+\`\`\`markdown
+# ${pid} — ${m.fullName || pid}
+
+${b.vision || '_Vision nebyla definovana._'}
+
+---
+
+## Jak zacit
+
+1. Precti \`PROJECT_STATUS.md\`
+2. Precti \`00_PROJECT_CONTROL/05_PLAN/PLAN.md\`
+3. Pokud pracujes s Claude Code, precti \`CLAUDE.md\`
+
+## Korenove soubory
+
+| Soubor | Ucel |
+|--------|------|
+| \`PROJECT_STATUS.md\` | Rychly vstup do projektu |
+| \`CHANGELOG.md\` | Log strukturalnich zmen |
+| \`EXECUTION_SNAPSHOT.md\` | Fakticky stav execution layer |
+| \`CLAUDE.md\` | Instrukce pro Claude Code |
+| \`Todo.md\` | Rucni seznam ukolu |
+| \`souhrnGPT.md\` | Souhrn pro externi GPT |
+
+## Slozky
+
+| Slozka | Vrstva | Primarni soubor |
+|--------|--------|-----------------|
+| \`00_PROJECT_CONTROL/01_BUSINESS/\` | PROC (Why) | \`BUSINESS.md\` |
+| \`00_PROJECT_CONTROL/02_KNOWLEDGE/\` | CO (What) | \`KNOWLEDGE.md\` |
+| \`00_PROJECT_CONTROL/03_ARCHITECTURE/\` | JAK (How) | \`ARCHITECTURE.md\` |
+| \`00_PROJECT_CONTROL/04_ENGINEERING/\` | CIM (With what) | \`ENGINEERING.md\` |
+| \`00_PROJECT_CONTROL/05_PLAN/\` | KDY (When) | \`PLAN.md\` |
+| \`00_PROJECT_CONTROL/06_DATA/\` | Fakta | \`DATA.md\` |
+| \`00_PROJECT_CONTROL/07_RESOURCE/\` | Vstupy | \`RESOURCE.md\` |
+| \`00_PROJECT_CONTROL/08_DEV/\` | Bridge | \`ExecutionLayer.lnk\` |
+\`\`\`
+
+#### 00_PROJECT_CONTROL/01_BUSINESS/BUSINESS.md
+\`\`\`markdown
+# PROC — Business Context
+
+## Vision
+
+${b.vision || '_Vyplnit._'}
+
+## Hodnota / Value
+
+${bulletList(b.value)}
+
+## Scope
+
+### IN (co projekt zahrnuje)
+
+${bulletList(b.scopeIn)}
+
+### OUT (co projekt NEzahrnuje)
+
+${bulletList(b.scopeOut)}
+
+## Omezeni / Constraints
+
+${bulletList(b.constraints)}
+
+## Predpoklady / Assumptions
+
+${bulletList(b.assumptions)}
+\`\`\`
+
+#### 00_PROJECT_CONTROL/05_PLAN/PLAN.md
+\`\`\`markdown
+# KDY — Plan projektu
+
+## Aktualni faze
+
+| Faze | Nazev | Stav |
+|------|-------|------|
+${state.plan.phases.filter(p => p.name).map((p, i) => `| ${i+1} | ${p.name} | ${p.status} |`).join('\n')}
+
+## Milniky
+
+${bulletList(state.plan.milestones, '_Zatim nejsou definovany._')}
+
+## Rizika
+
+${state.plan.risks.filter(r => r.risk).length ? '| Riziko | P | D | Mitigace |\n|--------|---|---|----------|\n' + state.plan.risks.filter(r => r.risk).map(r => `| ${r.risk} | ${r.probability} | ${r.impact} | ${r.mitigation} |`).join('\n') : '_Zatim nejsou identifikovana._'}
+\`\`\`
+
+#### CHANGELOG.md
+\`\`\`markdown
+# CHANGELOG
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [SemVer](https://semver.org/)
+
+## [Unreleased]
+
+## [0.1.0] - ${today}
+
+### Added
+- Inicializace struktury projektu ${pid}
+- Semanticke vrstvy v 00_PROJECT_CONTROL (01-07)
+- Delivery vrstva (10_DELIVERY)
+- Shared reference (20_SHARED_REFERENCE)
+\`\`\`
+
+#### EXECUTION_SNAPSHOT.md
+\`\`\`markdown
+# EXECUTION_SNAPSHOT
+
+> Most mezi KNOWLEDGE a execution layer. Pouze fakta.
+
+## Metadata
+
+- **Datum**: ${today}
+- **Verze**: 0.1.0
+- **Rezim**: ${m.mode}
+
+## Execution Layer
+
+- **Koren**: \`${eRoot}\`
+- **CONTEXT junction**: aktivni -> knowledge layer
+
+### Aplikace
+
+_Zadne aplikace zatim._
+
+## Aktivni prace
+
+_Zadna._
+
+## Blokery
+
+_Zadne._
+\`\`\`
+
+#### PROJECT_STATUS.md
+\`\`\`markdown
+# PROJECT_STATUS
+
+## Aktualni stav
+
+- **Rezim**: ${m.mode}
+- **Hlavni zamereni**: ${m.fullName || pid}
+
+## Posledni zmeny
+
+| Datum | Autor | Co bylo udelano |
+|-------|-------|-----------------|
+| ${today} | Inicializace | Zalozeni projektu |
+
+## Co je dalsi
+
+- Doplnit obsah vrstev
+- Definovat milniky
+
+## Blokery
+
+_Zadne._
+\`\`\`
+
+## Execution Layer: ${eRoot}
+
+### Adresarova struktura
+- apps/
+- .claude/skills/
+
+### CONTEXT junction
+Spust v PowerShell:
+\`\`\`powershell
+New-Item -ItemType Junction -Path "${eRoot}\\CONTEXT" -Target "${kRoot}"
+\`\`\`
+
+### 08_DEV shortcut
+Vytvor zastupce \`${kRoot}\\00_PROJECT_CONTROL\\08_DEV\\ExecutionLayer.lnk\` ukazujici na \`${eRoot}\`.
+`;
+
+  return prompt;
+}
+
+function generatePowerShell() {
+  const m = state.metadata;
+  const b = state.business;
+  const pid = getProjectId();
+  const kRoot = getKnowledgeRoot();
+  const eRoot = getExecutionRoot();
+  const today = m.date || new Date().toISOString().slice(0, 10);
+  const del = getActiveDelivery();
+
+  const writeFile = (path, content) => {
+    const escaped = content.replace(/"/g, '`"').replace(/\$/g, '`$');
+    return `[System.IO.File]::WriteAllText("${path}", "${escaped}", [System.Text.Encoding]::UTF8)\nWrite-Ok "${path.split('\\').pop()}"`;
+  };
+
+  let dirs = [
+    '00_PROJECT_CONTROL\\01_BUSINESS',
+    '00_PROJECT_CONTROL\\02_KNOWLEDGE',
+    '00_PROJECT_CONTROL\\03_ARCHITECTURE',
+    '00_PROJECT_CONTROL\\03_ARCHITECTURE\\ADR',
+    '00_PROJECT_CONTROL\\04_ENGINEERING',
+    '00_PROJECT_CONTROL\\05_PLAN',
+    '00_PROJECT_CONTROL\\06_DATA',
+    '00_PROJECT_CONTROL\\07_RESOURCE',
+    '00_PROJECT_CONTROL\\07_RESOURCE\\prompty',
+    '00_PROJECT_CONTROL\\08_DEV',
+    '99_ARCHIVE',
+  ];
+
+  if (state.delivery.preset !== 'Minimal') {
+    if (del.meetings) dirs.push('10_DELIVERY\\11_MEETINGS');
+    if (del.workItems) {
+      ['01_BUSINESS_REQUESTS','02_FUNCTIONAL_SPECS','03_TECHNICAL_SPECS','04_DEV_TASKS','05_CHANGE_REQUESTS'].forEach(d => dirs.push(`10_DELIVERY\\12_WORK_ITEMS\\${d}`));
+    }
+    if (del.migration) {
+      ['01_SCOPE','02_OBJECTS','03_MAPPING','04_TEMPLATES','05_MOCK_LOADS','06_RECONCILIATION','07_CUTOVER'].forEach(d => dirs.push(`10_DELIVERY\\13_MIGRATION\\${d}`));
+    }
+    if (del.integration) {
+      ['01_INTERFACE_CATALOG','02_API_SPECS','03_FIELD_MAPPING','04_TEST_EVIDENCE'].forEach(d => dirs.push(`10_DELIVERY\\14_INTEGRATION\\${d}`));
+    }
+    if (del.testing) {
+      ['01_TEST_STRATEGY','02_TEST_CASES','03_TEST_DATA','04_DEFECTS','05_UAT','06_TEST_RUNS'].forEach(d => dirs.push(`10_DELIVERY\\15_TESTING\\${d}`));
+    }
+    if (del.releaseTransport) dirs.push('10_DELIVERY\\16_RELEASE_TRANSPORT');
+    if (del.operations) dirs.push('10_DELIVERY\\17_OPERATIONS');
+    dirs.push('20_SHARED_REFERENCE\\21_TEMPLATES');
+  }
+
+  const dirsList = dirs.map(d => `    "${d}"`).join(',\n');
+
+  let script = `#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Meta Framework V3 — Inicializace projektu ${pid}
+.DESCRIPTION
+    Automaticky generovany skript. Vytvori knowledge layer, execution layer a CONTEXT junction.
+.NOTES
+    Vygenerovano: ${today}
+    Projekt: ${m.fullName || pid}
+#>
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Write-Step  { param([string]$msg) Write-Host "\\n  ==> $msg" -ForegroundColor Cyan }
+function Write-Ok    { param([string]$msg) Write-Host "    [OK] $msg" -ForegroundColor Green }
+function Write-Warn  { param([string]$msg) Write-Host "    [!]  $msg" -ForegroundColor Yellow }
+function Write-Fail  { param([string]$msg) Write-Host "    [ERR] $msg" -ForegroundColor Red }
+
+try {
+
+$knowledgeRoot = "${kRoot}"
+$executionRoot = "${eRoot}"
+
+Write-Host ""
+Write-Host "  +====================================================+" -ForegroundColor Cyan
+Write-Host "  |       META FRAMEWORK V3 — PROJECT INIT             |" -ForegroundColor Cyan
+Write-Host "  +====================================================+" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Projekt    : ${pid}"
+Write-Host "  Rezim      : ${m.mode}"
+Write-Host "  Knowledge  : $knowledgeRoot"
+Write-Host "  Execution  : $executionRoot"
+Write-Host ""
+
+$confirm = Read-Host "Pokracovat? [A/n]"
+if ($confirm -and $confirm.Trim().ToUpper() -eq "N") {
+    Write-Warn "Zruseno."
+    exit 0
+}
+
+# ── Krok 1: Adresarova struktura ──────────────────────────────
+Write-Step "Krok 1/5 -- Vytvareni adresarove struktury..."
+
+$dirs = @(
+${dirsList}
+)
+
+foreach ($d in $dirs) {
+    $fullPath = Join-Path $knowledgeRoot $d
+    New-Item -ItemType Directory -Force -Path $fullPath | Out-Null
+    Write-Ok $d
+}
+
+# ── Krok 2: Generovane soubory ────────────────────────────────
+Write-Step "Krok 2/5 -- Generovani souboru..."
+
+# BUSINESS.md
+$businessContent = @"
+# PROC — Business Context
+
+## Vision
+
+${b.vision || '_Vyplnit._'}
+
+## Hodnota / Value
+
+${bulletList(b.value)}
+
+## Scope
+
+### IN (co projekt zahrnuje)
+
+${bulletList(b.scopeIn)}
+
+### OUT (co projekt NEzahrnuje)
+
+${bulletList(b.scopeOut)}
+
+## Omezeni / Constraints
+
+${bulletList(b.constraints)}
+
+## Predpoklady / Assumptions
+
+${bulletList(b.assumptions)}
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\01_BUSINESS\\BUSINESS.md"), $businessContent, [System.Text.Encoding]::UTF8)
+Write-Ok "BUSINESS.md"
+
+# PLAN.md
+$planContent = @"
+# KDY — Plan projektu
+
+## Aktualni faze
+
+| Faze | Nazev | Stav |
+|------|-------|------|
+${state.plan.phases.filter(p => p.name).map((p, i) => `| ${i+1} | ${p.name} | ${p.status} |`).join('\n')}
+
+## Milniky
+
+${bulletList(state.plan.milestones, '_Zatim nejsou definovany._')}
+
+## Rizika
+
+_Zatim nejsou identifikovana._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\05_PLAN\\PLAN.md"), $planContent, [System.Text.Encoding]::UTF8)
+Write-Ok "PLAN.md"
+
+# DATA.md
+$dataContent = @"
+# Fakta — Data Layer
+
+> Pouze fakticke vystupy analyzy.
+
+## Exporty a mereni
+
+_Zatim zadna data._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\06_DATA\\DATA.md"), $dataContent, [System.Text.Encoding]::UTF8)
+Write-Ok "DATA.md"
+
+# RESOURCE.md
+$resourceContent = @"
+# Vstupy — Resource Layer
+
+## Externi reference
+
+_Zatim zadne reference._
+
+## Standardy a normy
+
+_Zatim neaplikovano._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\07_RESOURCE\\RESOURCE.md"), $resourceContent, [System.Text.Encoding]::UTF8)
+Write-Ok "RESOURCE.md"
+
+# CHANGELOG.md
+$changelogContent = @"
+# CHANGELOG
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [SemVer](https://semver.org/)
+
+## [Unreleased]
+
+## [0.1.0] - ${today}
+
+### Added
+- Inicializace struktury projektu ${pid}
+- Semanticke vrstvy v 00_PROJECT_CONTROL (01-07)
+- Delivery vrstva (10_DELIVERY)
+- Shared reference (20_SHARED_REFERENCE)
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "CHANGELOG.md"), $changelogContent, [System.Text.Encoding]::UTF8)
+Write-Ok "CHANGELOG.md"
+
+# EXECUTION_SNAPSHOT.md
+$snapshotContent = @"
+# EXECUTION_SNAPSHOT
+
+> Most mezi KNOWLEDGE a execution layer. Pouze fakta.
+
+## Metadata
+
+- **Datum**: ${today}
+- **Verze**: 0.1.0
+- **Rezim**: ${m.mode}
+
+## Execution Layer
+
+- **Koren**: \`\`$executionRoot\`\`
+- **CONTEXT junction**: aktivni -> knowledge layer
+
+### Aplikace
+
+_Zadne aplikace zatim._
+
+## Aktivni prace
+
+_Zadna._
+
+## Blokery
+
+_Zadne._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "EXECUTION_SNAPSHOT.md"), $snapshotContent, [System.Text.Encoding]::UTF8)
+Write-Ok "EXECUTION_SNAPSHOT.md"
+
+# PROJECT_STATUS.md
+$statusContent = @"
+# PROJECT_STATUS
+
+## Aktualni stav
+
+- **Rezim**: ${m.mode}
+- **Hlavni zamereni**: ${m.fullName || pid}
+
+## Posledni zmeny
+
+| Datum | Autor | Co bylo udelano |
+|-------|-------|-----------------|
+| ${today} | Inicializace | Zalozeni projektu |
+
+## Co je dalsi
+
+- Doplnit obsah vrstev
+- Definovat milniky
+
+## Blokery
+
+_Zadne._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "PROJECT_STATUS.md"), $statusContent, [System.Text.Encoding]::UTF8)
+Write-Ok "PROJECT_STATUS.md"
+
+# README.md
+$readmeContent = @"
+# ${pid} — ${m.fullName || pid}
+
+${b.vision || '_Vision nebyla definovana._'}
+
+---
+
+## Jak zacit
+
+1. Precti \`\`PROJECT_STATUS.md\`\`
+2. Precti \`\`00_PROJECT_CONTROL/05_PLAN/PLAN.md\`\`
+3. Pokud pracujes s Claude Code, precti \`\`CLAUDE.md\`\`
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "README.md"), $readmeContent, [System.Text.Encoding]::UTF8)
+Write-Ok "README.md"
+
+# Todo.md
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "Todo.md"), "# Todo\n\n> Tento soubor aktualizuje vyhradne uzivatel.\n\n## Otevrene ukoly\n\n_Zadne ukoly zatim._", [System.Text.Encoding]::UTF8)
+Write-Ok "Todo.md"
+
+# souhrnGPT.md
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "souhrnGPT.md"), "# souhrnGPT\n\n> Automaticky generovany. Spust agenta souhrn-gpt-updater.\n\n_Obsah zatim nevygenerovan._", [System.Text.Encoding]::UTF8)
+Write-Ok "souhrnGPT.md"
+
+# PROJECT_HISTORY.md
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "PROJECT_HISTORY.md"), "# PROJECT_HISTORY\n\n> Append-only session archiv. Nejnovejsi nahore.\n\n---\n\n## Session 1 — ${today}\n\n- **Tema**: Inicializace projektu\n- **Autor**: System\n- **Dokonceno**: Zalozeni projektove struktury Meta Framework V3\n", [System.Text.Encoding]::UTF8)
+Write-Ok "PROJECT_HISTORY.md"
+
+# ── Krok 3: Execution layer ──────────────────────────────────
+Write-Step "Krok 3/5 -- Vytvareni execution layer..."
+
+New-Item -ItemType Directory -Force -Path $executionRoot | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $executionRoot "apps") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $executionRoot ".claude\\skills") | Out-Null
+Write-Ok "Execution layer: $executionRoot"
+
+# ── Krok 4: CONTEXT junction + 08_DEV shortcut ───────────────
+Write-Step "Krok 4/5 -- Propojeni vrstev..."
+
+# CONTEXT junction (Execution -> Knowledge)
+$junctionPath = Join-Path $executionRoot "CONTEXT"
+if (Test-Path $junctionPath) {
+    Write-Warn "CONTEXT junction jiz existuje."
+} else {
+    $result = cmd /c "mklink /J \`"$junctionPath\`" \`"$knowledgeRoot\`"" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok "CONTEXT junction -> $knowledgeRoot"
+    } else {
+        Write-Fail "Junction: $result"
+    }
+}
+
+# 08_DEV shortcut (Knowledge -> Execution)
+$lnkPath = Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\08_DEV\\ExecutionLayer.lnk"
+try {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($lnkPath)
+    $shortcut.TargetPath = $executionRoot
+    $shortcut.Save()
+    Write-Ok "08_DEV\\ExecutionLayer.lnk -> $executionRoot"
+} catch {
+    Write-Fail "Shortcut: $_"
+}
+
+# ── Krok 5: Verifikace ───────────────────────────────────────
+Write-Step "Krok 5/5 -- Verifikace..."
+
+$checks = @(
+    (Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\01_BUSINESS\\BUSINESS.md"),
+    (Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\05_PLAN\\PLAN.md"),
+    (Join-Path $knowledgeRoot "CHANGELOG.md"),
+    (Join-Path $knowledgeRoot "EXECUTION_SNAPSHOT.md"),
+    (Join-Path $knowledgeRoot "README.md"),
+    (Join-Path $knowledgeRoot "PROJECT_STATUS.md"),
+    (Join-Path $executionRoot "CONTEXT")
+)
+
+$allOk = $true
+foreach ($path in $checks) {
+    if (Test-Path $path) {
+        Write-Ok (Split-Path $path -Leaf)
+    } else {
+        Write-Fail "CHYBI: $path"
+        $allOk = $false
+    }
+}
+
+Write-Host ""
+if ($allOk) {
+    Write-Host "  META FRAMEWORK V3 INIT -- HOTOVO" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  Projekt    : ${pid}"
+    Write-Host "  Knowledge  : $knowledgeRoot"
+    Write-Host "  Execution  : $executionRoot"
+    Write-Host ""
+    Write-Host "  Dalsi krok: Otevri Knowledge root v Claude Code" -ForegroundColor Cyan
+} else {
+    Write-Host "  Dokonceno s chybami — viz vystup vyse." -ForegroundColor Yellow
+}
+
+} catch {
+    Write-Host ""
+    Write-Host "  CHYBA: $_" -ForegroundColor Red
+} finally {
+    Write-Host ""
+    Write-Host "Stiskni libovolnou klavesu..." -NoNewline -ForegroundColor DarkGray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host ""
+}
+`;
+
+  return script;
+}
+
+// ============================================================
+// CLIPBOARD & DOWNLOAD
+// ============================================================
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Zkopirovano do schranky!');
+  } catch (e) {
+    // Fallback for file:// protocol
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Zkopirovano do schranky!');
+  }
+}
+
+function downloadFile(content, filename) {
+  // Add UTF-8 BOM for PowerShell
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + content], { type: 'text/plain; charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Soubor ${filename} stazen!`);
+}
+
+// ============================================================
+// BLANK TEMPLATE GENERATOR
+// ============================================================
+function downloadBlankTemplate() {
+  const today = new Date().toISOString().slice(0, 10);
+  const dateShort = today.replace(/-/g, '');
+  const tpl = `# META FRAMEWORK V3 — Inicializace projektu
+
+> Vypln VARIABLES a jednotlive sekce. Hotovy soubor nahraj do wizardu (tlacitko "Import .md" nebo pretazenim na stranku).
+> Radky zacinajici > jsou napoveda — nemaz je, parser je ignoruje.
+> Checkboxy: [x] = aktivni, [ ] = neaktivni.
+
+---
+
+## VARIABLES
+
+\`\`\`
+PROJECT_ID:      ${dateShort}_KratkyNazev
+PROJECT_NAME:    Plny nazev projektu
+DATE:            ${today}
+PROJECT_TYPE:    INT
+CUSTOMER:
+KNOWLEDGE_ROOT:  ${state.metadata.knowledgeBase || 'C:\\Users\\licka\\OneDrive - ARICOMA\\Prace\\projekty\\9999Claude'}\\Interni\\${dateShort}_KratkyNazev
+EXECUTION_ROOT:  ${state.metadata.executionBase || 'C:\\DEV\\Claude'}\\Interni\\${dateShort}_KratkyNazev
+INITIAL_MODE:    C
+\`\`\`
+
+> **PROJECT_TYPE:** INT = interni projekt ARICOMA | ZAK = zakaznicky projekt (vyzaduje CUSTOMER)
+> **INITIAL_MODE:** A = Teoreticky | B = Analyticky | C = Implementacni
+> **Odvozeni cest:** INT: {root}\\Interni\\{PROJECT_ID} | ZAK: {root}\\Zakaznici\\{CUSTOMER}\\{PROJECT_ID}
+
+---
+
+## 01_BUSINESS — PROC (Why)
+
+### VISION
+
+> 1-2 vety. Proc tento projekt existuje a co chceme dosahnout. (Povinne)
+
+
+### VALUE
+
+> Co projekt prinasi. Min. 2 polozky.
+
+-
+-
+
+### SCOPE_IN
+
+> Co je soucasti projektu. Min. 1 polozka.
+
+-
+
+### SCOPE_OUT
+
+> Co explicitne neni soucasti projektu.
+
+-
+
+### PROJECT_TYPE_LABEL
+
+> Vyber: Implementacni | Teoreticky | Analyticky
+
+Implementacni
+
+### CONSTRAINTS
+
+> Omezeni (technicka, organizacni, casova).
+
+-
+
+### ASSUMPTIONS
+
+> Predpoklady, na kterych projekt stavi.
+
+-
+
+### STAKEHOLDERS
+
+> Klicove osoby projektu.
+
+| Jmeno | Role | Zodpovednost |
+|-------|------|-------------|
+|  |  |  |
+
+### CUSTOMER_INFO
+
+> Pouze pro ZAK projekty.
+
+
+---
+
+## 02_KNOWLEDGE — CO (What)
+
+### GOVERNANCE_OVERRIDES
+
+> Zmeny oproti vychozim pravidlum. Nechte prazdne pro vychozi.
+
+
+### CUSTOM_RULES
+
+> Dalsi pravidla specificka pro tento projekt.
+
+-
+
+---
+
+## 03_ARCHITECTURE — JAK (How)
+
+### TECHNOLOGY_STACK
+
+> Hlavni technologie a frameworky.
+
+
+### STRUCTURAL_DECISIONS
+
+> Klicova architektonicka rozhodnuti.
+
+-
+
+### FIRST_ADR
+
+> Chcete vytvorit prvni ADR?
+
+- **Vytvorit ADR:** [Ne]
+- **Nazev:** [ADR-001: ]
+- **Kontext:** []
+- **Rozhodnuti:** []
+- **Dusledky:** []
+
+---
+
+## 04_ENGINEERING — CIM (With what)
+
+### CODING_STANDARDS
+
+> Coding standardy. Nechte prazdne pro vychozi z CLAUDE.md.
+
+
+### TOOLS
+
+> Nastroje pouzivane v projektu.
+
+-
+
+### AGENT_CONFIG
+
+> Aktivovat agenty? Zmen [ ] na [x] pro aktivaci.
+
+- [x] changelog-manager — automaticky aktualizuje CHANGELOG.md
+- [ ] md-postprocessor — normalizace Markdown souboru
+- [x] souhrn-gpt-updater — generuje souhrnGPT.md
+
+### SKILL_CONFIG
+
+> Aktivovat skills? Zmen [ ] na [x] pro aktivaci.
+
+- [x] ai-readable-markdown — styl normalizace
+- [x] keep-a-changelog-standard — CHANGELOG metodika
+- [x] zvl_end-session — session closure protocol
+- [ ] zvl_work-items — sprava work items
+
+---
+
+## 05_PLAN — KDY (When)
+
+### PHASES
+
+| Faze | Nazev | Stav |
+|------|-------|------|
+| 1 | Inicializace | Hotovo |
+| 2 |  | Ceka |
+| 3 |  | Ceka |
+
+### MILESTONES
+
+> Klicove milniky s datem.
+
+-
+
+### RISKS
+
+| Riziko | Pravdepodobnost | Dopad | Mitigace |
+|--------|-----------------|-------|----------|
+|  |  |  |  |
+
+---
+
+## 06_DATA — Fakta
+
+### DATA_SOURCES
+
+> Zdroje dat pro projekt.
+
+-
+
+### MEASUREMENT_APPROACH
+
+> Jak se meri uspech/postup projektu.
+
+
+### GAP_TEMPLATE
+
+> Zahrnout sablonu pro GAP analyzu? (doporuceno pro ZAK)
+
+[Ne]
+
+---
+
+## 07_RESOURCE — Vstupy
+
+### EXTERNAL_REFERENCES
+
+| Nazev | URL/Cesta | Popis |
+|-------|-----------|-------|
+|  |  |  |
+
+### SYSTEM_ACCESS
+
+| System | URL | Typ pristupu | Poznamka |
+|--------|-----|-------------|----------|
+|  |  |  |  |
+
+### MANUALS
+
+> Manualy a externi dokumentace.
+
+-
+
+---
+
+## DELIVERY CONFIG
+
+### PRESET
+
+> Zavrte na jednu moznost (zmen [ ] na [x]).
+
+- [ ] **Minimal** — jen 00_PROJECT_CONTROL + 99_ARCHIVE
+- [x] **Standard** — + 10_DELIVERY (zakladni) + 20_SHARED_REFERENCE
+- [ ] **Full SAP** — + kompletni migration, integration, testing
+- [ ] **Custom** — vlastni vyber (viz nize)
+
+### CUSTOM DELIVERY SECTIONS
+
+> Pouze pri presetu Custom. Zavrte na pozadovane sekce.
+
+- [ ] 11_MEETINGS — meeting notes
+- [ ] 12_WORK_ITEMS — business requests, specs, tasks
+- [ ] 13_MIGRATION — data migration
+- [ ] 14_INTEGRATION — interface catalog, API specs
+- [ ] 15_TESTING — test strategy, cases, runs, defects
+- [ ] 16_RELEASE_TRANSPORT — transport plan, runbook
+- [ ] 17_OPERATIONS — authorizations, monitoring
+
+### TEMPLATES
+
+> Sablony pro 20_SHARED_REFERENCE/21_TEMPLATES/. Zavrte na pozadovane.
+
+- [x] business-request-template.md
+- [x] change-request-template.md
+- [x] meeting-note-template.md
+- [x] meeting-screenshots-template.md
+- [x] test-case-template.md
+
+---
+
+## CHECKLIST pred importem
+
+- [ ] PROJECT_ID ma format YYYYMMDD_KratkyNazev
+- [ ] DATE je ve formatu YYYY-MM-DD
+- [ ] VISION je vyplnena (ne prazdna)
+- [ ] VALUE ma alespon 2 polozky
+- [ ] SCOPE_IN ma alespon 1 polozku
+- [ ] INITIAL_MODE je A, B nebo C
+- [ ] Pokud ZAK: CUSTOMER je vyplnen
+- [ ] DELIVERY preset je zvolen
+`;
+
+  downloadFile(tpl, 'templatestruktura.md');
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const step = state.currentStep;
+
+  // Sidebar
+  const nav = el('stepNav');
+  nav.innerHTML = steps.map((s, i) => {
+    const active = i === step;
+    const visited = i < step;
+    const iconCls = active ? 'bg-primary-600 text-white' : visited ? 'bg-primary-100 text-primary-700' : 'bg-zinc-100 text-zinc-400';
+    const textCls = active ? 'text-primary-700 font-semibold' : visited ? 'text-zinc-700' : 'text-zinc-400';
+    const borderCls = active ? 'border-l-2 border-primary-600' : 'border-l-2 border-transparent';
+    return `<button onclick="goToStep(${i})" class="w-full flex items-center gap-3 px-5 py-2.5 text-left hover:bg-zinc-50 transition-colors ${borderCls}">
+      <span class="step-indicator w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${iconCls}">${visited ? '&#10003;' : s.icon}</span>
+      <span class="text-sm ${textCls}">${s.label}</span>
+    </button>`;
+  }).join('');
+
+  // Progress
+  const pct = Math.round((step / (steps.length - 1)) * 100);
+  el('progressBar').style.width = pct + '%';
+  el('progressLabel').textContent = pct + '%';
+
+  // Content
+  const renderers = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7, renderStep8, renderStep9];
+  const content = el('stepContent');
+  content.innerHTML = renderers[step]();
+  content.className = 'fade-in';
+
+  // Buttons
+  el('btnPrev').disabled = step === 0;
+  el('btnPrev').style.visibility = step === 0 ? 'hidden' : 'visible';
+  el('btnNext').textContent = step === steps.length - 1 ? 'Hotovo' : 'Dalsi \u2192';
+  el('btnNext').style.visibility = step === steps.length - 1 ? 'hidden' : 'visible';
+
+  // Output tabs
+  if (step === 9) {
+    setTimeout(() => setOutputTab(activeOutputTab), 0);
+  }
+
+  // Preview
+  updatePreview();
+  saveState();
+}
+
+function updatePreview() {
+  const preview = el('treePreview');
+  if (preview) {
+    preview.innerHTML = buildTreeHtml();
+  }
+}
+
+function goToStep(i) {
+  state.currentStep = i;
+  render();
+}
+
+function nextStep() {
+  if (state.currentStep < steps.length - 1) {
+    state.currentStep++;
+    render();
+    window.scrollTo(0, 0);
+  }
+}
+
+function prevStep() {
+  if (state.currentStep > 0) {
+    state.currentStep--;
+    render();
+    window.scrollTo(0, 0);
+  }
+}
+
+// ============================================================
+// IMPORT templatestruktura.md PARSER
+// ============================================================
+function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    parseTemplateMarkdown(e.target.result);
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseTemplateMarkdown(text) {
+  const lines = text.split('\n');
+
+  // Helper: extract value from a line like "PROJECT_ID:      value"
+  function getVar(name) {
+    const rx = new RegExp('^' + name + ':\\s*(.+)', 'im');
+    const m = text.match(rx);
+    return m ? m[1].trim() : '';
+  }
+
+  // Helper: extract bullet list items between a heading and next heading/section
+  function getBullets(sectionHeading, endPattern) {
+    const startRx = new RegExp('^###?\\s+' + sectionHeading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'im');
+    const startMatch = text.match(startRx);
+    if (!startMatch) return [];
+    const startIdx = text.indexOf(startMatch[0]) + startMatch[0].length;
+    const rest = text.slice(startIdx);
+    const endMatch = rest.match(/^##/m);
+    const block = endMatch ? rest.slice(0, endMatch.index) : rest;
+    const items = [];
+    block.split('\n').forEach(line => {
+      const m = line.match(/^-\s+(.+)/);
+      if (m && !m[1].startsWith('[') && m[1].trim() !== '') {
+        const val = m[1].replace(/^\[.*?\]\s*/, '').trim();
+        if (val && val !== '[Benefit 1]' && val !== '[Benefit 2]' && val !== '[Benefit 3]'
+            && val !== '[Co je uvnitr scope]' && val !== '[Co je vne scope]'
+            && val !== '[Omezeni 1]' && val !== '[Omezeni 2]'
+            && val !== '[Predpoklad 1]' && val !== '[Pravidlo 1]'
+            && val !== '[Rozhodnuti 1]' && val !== '[Zdroj 1]'
+            && val !== '[Nastroj 1]' && val !== '[Manual 1 — cesta nebo URL]'
+            && !val.startsWith('[Milnik') && !val.startsWith('[Reference')
+            && !val.startsWith('[Co je')) {
+          items.push(val);
+        }
+      }
+    });
+    return items.length ? items : [''];
+  }
+
+  // Helper: extract text between a heading and next heading (non-bullet)
+  function getTextBlock(sectionHeading) {
+    const startRx = new RegExp('^###?\\s+' + sectionHeading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'im');
+    const startMatch = text.match(startRx);
+    if (!startMatch) return '';
+    const startIdx = text.indexOf(startMatch[0]) + startMatch[0].length;
+    const rest = text.slice(startIdx);
+    const endMatch = rest.match(/^##/m);
+    const block = endMatch ? rest.slice(0, endMatch.index) : rest;
+    // Get non-empty, non-comment, non-placeholder lines
+    const lines = block.split('\n')
+      .filter(l => !l.startsWith('>') && !l.startsWith('```') && !l.startsWith('- [') && l.trim() !== '')
+      .map(l => l.trim())
+      .filter(l => !l.startsWith('[Vyplnit') && !l.startsWith('[Vyplnit]') && l !== '[Vyplnit]'
+                   && !l.startsWith('[Implementacni') && !l.startsWith('[Vychozi')
+                   && !l.startsWith('[Zadne zmeny'));
+    return lines.join('\n').trim();
+  }
+
+  // Helper: extract table rows
+  function getTableRows(sectionHeading) {
+    const startRx = new RegExp('^###?\\s+' + sectionHeading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'im');
+    const startMatch = text.match(startRx);
+    if (!startMatch) return [];
+    const startIdx = text.indexOf(startMatch[0]) + startMatch[0].length;
+    const rest = text.slice(startIdx);
+    const endMatch = rest.match(/^##/m);
+    const block = endMatch ? rest.slice(0, endMatch.index) : rest;
+    const rows = [];
+    block.split('\n').forEach(line => {
+      if (line.includes('|') && !line.match(/^\|[\s-|]+\|$/) && !line.match(/^\|\s*(Jmeno|Nazev|System|Riziko|Faze)\s*\|/)) {
+        const cells = line.split('|').map(c => c.trim()).filter(c => c);
+        if (cells.length >= 2 && !cells[0].startsWith('[') && !cells[0].startsWith('---')) {
+          rows.push(cells);
+        }
+      }
+    });
+    return rows;
+  }
+
+  // Parse VARIABLES
+  const projectId = getVar('PROJECT_ID');
+  const projectType = getVar('PROJECT_TYPE');
+  const customer = getVar('CUSTOMER');
+  const knowledgeRoot = getVar('KNOWLEDGE_ROOT');
+  const executionRoot = getVar('EXECUTION_ROOT');
+  const mode = getVar('INITIAL_MODE');
+  const date = getVar('DATE');
+  const projectName = getVar('PROJECT_NAME');
+
+  // Derive shortName from PROJECT_ID (remove date prefix)
+  let shortName = '';
+  if (projectId) {
+    shortName = projectId.replace(/^\d{8}_?/, '');
+  }
+
+  // Derive base paths from KNOWLEDGE_ROOT / EXECUTION_ROOT (strip suffix)
+  if (knowledgeRoot) {
+    const suffix = knowledgeRoot.match(/\\(?:Interni|Zakaznici)\\.*$/);
+    if (suffix) {
+      state.metadata.knowledgeBase = knowledgeRoot.slice(0, -suffix[0].length);
+    }
+  }
+  if (executionRoot) {
+    const suffix = executionRoot.match(/\\(?:Interni|Zakaznici)\\.*$/);
+    if (suffix) {
+      state.metadata.executionBase = executionRoot.slice(0, -suffix[0].length);
+    }
+  }
+
+  // Apply to state
+  if (projectType) state.metadata.projectType = projectType.toUpperCase().startsWith('ZAK') ? 'ZAK' : 'INT';
+  if (customer) state.metadata.customer = customer;
+  if (shortName) state.metadata.shortName = shortName;
+  if (projectName) state.metadata.fullName = projectName;
+  if (date) state.metadata.date = date;
+  if (mode) state.metadata.mode = mode.toUpperCase();
+
+  // BUSINESS
+  const vision = getTextBlock('VISION');
+  if (vision) state.business.vision = vision;
+
+  const value = getBullets('VALUE');
+  if (value.length && value[0]) state.business.value = value;
+
+  const scopeIn = getBullets('SCOPE_IN');
+  if (scopeIn.length && scopeIn[0]) state.business.scopeIn = scopeIn;
+
+  const scopeOut = getBullets('SCOPE_OUT');
+  if (scopeOut.length && scopeOut[0]) state.business.scopeOut = scopeOut;
+
+  // PROJECT_TYPE_LABEL
+  const typeLabelBlock = getTextBlock('PROJECT_TYPE_LABEL');
+  if (typeLabelBlock && ['Implementacni', 'Teoreticky', 'Analyticky'].includes(typeLabelBlock)) {
+    state.business.typeLabel = typeLabelBlock;
+  }
+
+  const constraints = getBullets('CONSTRAINTS');
+  if (constraints.length && constraints[0]) state.business.constraints = constraints;
+
+  const assumptions = getBullets('ASSUMPTIONS');
+  if (assumptions.length && assumptions[0]) state.business.assumptions = assumptions;
+
+  // STAKEHOLDERS table
+  const stakeholderRows = getTableRows('STAKEHOLDERS');
+  if (stakeholderRows.length) {
+    state.business.stakeholders = stakeholderRows.map(r => ({
+      name: r[0] || '', role: r[1] || '', responsibility: r[2] || ''
+    }));
+  }
+
+  const custInfo = getTextBlock('CUSTOMER_INFO');
+  if (custInfo) state.business.customerInfo = custInfo;
+
+  // KNOWLEDGE
+  const govOverrides = getTextBlock('GOVERNANCE_OVERRIDES');
+  if (govOverrides && govOverrides !== 'Zadne zmeny / Vlastni pravidla') {
+    state.knowledge.governanceOverrides = govOverrides;
+  }
+  const customRules = getBullets('CUSTOM_RULES');
+  if (customRules.length && customRules[0]) state.knowledge.customRules = customRules;
+
+  // ARCHITECTURE
+  const techStack = getTextBlock('TECHNOLOGY_STACK');
+  if (techStack) state.architecture.techStack = techStack;
+  const decisions = getBullets('STRUCTURAL_DECISIONS');
+  if (decisions.length && decisions[0]) state.architecture.decisions = decisions;
+
+  // Check for ADR
+  const adrMatch = text.match(/Vytvorit ADR:\s*\[?\s*(Ano|Ne)/i);
+  if (adrMatch && adrMatch[1].toLowerCase() === 'ano') {
+    state.architecture.createAdr = true;
+    const adrTitle = getTextBlock('FIRST_ADR');
+    // Parse ADR sub-fields
+    const nazevMatch = text.match(/\*\*Nazev:\*\*\s*(.+)/i) || text.match(/- \*\*Nazev:\*\*\s*(.+)/i);
+    if (nazevMatch) state.architecture.adrTitle = nazevMatch[1].replace(/^\[|\]$/g, '').trim();
+    const kontextMatch = text.match(/\*\*Kontext:\*\*\s*(.+)/i) || text.match(/- \*\*Kontext:\*\*\s*(.+)/i);
+    if (kontextMatch) state.architecture.adrContext = kontextMatch[1].replace(/^\[|\]$/g, '').trim();
+    const rozhodnutiMatch = text.match(/\*\*Rozhodnuti:\*\*\s*(.+)/i) || text.match(/- \*\*Rozhodnuti:\*\*\s*(.+)/i);
+    if (rozhodnutiMatch) state.architecture.adrDecision = rozhodnutiMatch[1].replace(/^\[|\]$/g, '').trim();
+    const dusledkyMatch = text.match(/\*\*Dusledky:\*\*\s*(.+)/i) || text.match(/- \*\*Dusledky:\*\*\s*(.+)/i);
+    if (dusledkyMatch) state.architecture.adrConsequences = dusledkyMatch[1].replace(/^\[|\]$/g, '').trim();
+  }
+
+  // ENGINEERING
+  const codingStd = getTextBlock('CODING_STANDARDS');
+  if (codingStd && codingStd !== 'Vychozi / Vlastni standardy') state.engineering.codingStandards = codingStd;
+  const tools = getBullets('TOOLS');
+  if (tools.length && tools[0]) state.engineering.tools = tools;
+
+  // Agent/Skill checkboxes
+  const agentBlock = text.match(/### AGENT_CONFIG[\s\S]*?(?=###|## )/i);
+  if (agentBlock) {
+    const ab = agentBlock[0];
+    state.engineering.agents.changelog = /\[x\].*changelog-manager/i.test(ab);
+    state.engineering.agents.mdPostprocessor = /\[x\].*md-postprocessor/i.test(ab);
+    state.engineering.agents.souhrnGpt = /\[x\].*souhrn-gpt-updater/i.test(ab);
+  }
+  const skillBlock = text.match(/### SKILL_CONFIG[\s\S]*?(?=###|## )/i);
+  if (skillBlock) {
+    const sb = skillBlock[0];
+    state.engineering.skills.aiMarkdown = /\[x\].*ai-readable-markdown/i.test(sb);
+    state.engineering.skills.keepChangelog = /\[x\].*keep-a-changelog/i.test(sb);
+    state.engineering.skills.endSession = /\[x\].*zvl_end-session/i.test(sb);
+    state.engineering.skills.workItems = /\[x\].*zvl_work-items/i.test(sb);
+  }
+
+  // PLAN
+  const phaseRows = getTableRows('PHASES');
+  if (phaseRows.length) {
+    state.plan.phases = phaseRows.map(r => ({
+      name: r[1] || r[0] || '', status: r[2] || r[1] || 'Ceka'
+    }));
+  }
+  const milestones = getBullets('MILESTONES');
+  if (milestones.length && milestones[0]) state.plan.milestones = milestones;
+
+  const riskRows = getTableRows('RISKS');
+  if (riskRows.length) {
+    state.plan.risks = riskRows.map(r => ({
+      risk: r[0] || '', probability: r[1] || '', impact: r[2] || '', mitigation: r[3] || ''
+    }));
+  }
+
+  // DATA
+  const dataSources = getBullets('DATA_SOURCES');
+  if (dataSources.length && dataSources[0]) state.data.sources = dataSources;
+  const measurement = getTextBlock('MEASUREMENT_APPROACH');
+  if (measurement) state.data.measurement = measurement;
+  const gapMatch = text.match(/### GAP_TEMPLATE[\s\S]*?\[?\s*(Ano|Ne)/i);
+  if (gapMatch) state.data.gapTemplate = gapMatch[1].toLowerCase() === 'ano';
+
+  // RESOURCE
+  const refRows = getTableRows('EXTERNAL_REFERENCES');
+  if (refRows.length) {
+    state.resource.references = refRows.map(r => ({
+      name: r[0] || '', url: r[1] || '', description: r[2] || ''
+    }));
+  }
+  const sysRows = getTableRows('SYSTEM_ACCESS');
+  if (sysRows.length) {
+    state.resource.systemAccess = sysRows.map(r => ({
+      system: r[0] || '', url: r[1] || '', accessType: r[2] || '', note: r[3] || ''
+    }));
+  }
+  const manuals = getBullets('MANUALS');
+  if (manuals.length && manuals[0]) state.resource.manuals = manuals;
+
+  // DELIVERY
+  const presetMatch = text.match(/\[x\]\s*\*\*(Minimal|Standard|Full SAP|Custom)\*\*/i);
+  if (presetMatch) {
+    state.delivery.preset = presetMatch[1];
+    applyPreset(presetMatch[1]);
+  }
+
+  // Custom delivery checkboxes
+  const customBlock = text.match(/### CUSTOM DELIVERY SECTIONS[\s\S]*?(?=###|## )/i);
+  if (customBlock) {
+    const cb = customBlock[0];
+    state.delivery.custom.meetings = /\[x\].*11_MEETINGS/i.test(cb);
+    state.delivery.custom.workItems = /\[x\].*12_WORK_ITEMS/i.test(cb);
+    state.delivery.custom.migration = /\[x\].*13_MIGRATION/i.test(cb);
+    state.delivery.custom.integration = /\[x\].*14_INTEGRATION/i.test(cb);
+    state.delivery.custom.testing = /\[x\].*15_TESTING/i.test(cb);
+    state.delivery.custom.releaseTransport = /\[x\].*16_RELEASE_TRANSPORT/i.test(cb);
+    state.delivery.custom.operations = /\[x\].*17_OPERATIONS/i.test(cb);
+  }
+
+  // Templates
+  const tplBlock = text.match(/### TEMPLATES[\s\S]*?(?=##[^#]|$)/i);
+  if (tplBlock) {
+    const tb = tplBlock[0];
+    state.delivery.templates.businessRequest = /\[x\].*business-request/i.test(tb);
+    state.delivery.templates.changeRequest = /\[x\].*change-request/i.test(tb);
+    state.delivery.templates.meetingNote = /\[x\].*meeting-note-template/i.test(tb);
+    state.delivery.templates.meetingScreenshots = /\[x\].*meeting-screenshots/i.test(tb);
+    state.delivery.templates.testCase = /\[x\].*test-case/i.test(tb);
+  }
+
+  saveState();
+  // Jump to output step
+  state.currentStep = 9;
+  render();
+  showToast('Template importovan! Zkontroluj data a generuj vystup.');
+}
+
+// Drag & drop support on the whole page
+document.addEventListener('DOMContentLoaded', () => {
+  let dragCounter = 0;
+  document.body.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; document.body.classList.add('drag-over'); });
+  document.body.addEventListener('dragleave', (e) => { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; document.body.classList.remove('drag-over'); } });
+  document.body.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
+  document.body.addEventListener('drop', (e) => {
+    dragCounter = 0; document.body.classList.remove('drag-over');
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.md') || file.name.endsWith('.txt'))) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        parseTemplateMarkdown(ev.target.result);
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      showToast('Podporovane formaty: .md, .txt');
+    }
+  });
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
