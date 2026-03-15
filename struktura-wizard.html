@@ -280,9 +280,22 @@ function getProjectId() {
   return `${d}_${s}`;
 }
 
+function sanitizeBase(base, projectType, customer) {
+  base = base.replace(/[\\/]+$/, '');
+  if (projectType === 'ZAK' && customer) {
+    const rxFull = new RegExp('[\\\\/]Zakaznici[\\\\/]' + customer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+    base = base.replace(rxFull, '');
+    base = base.replace(/[\\/]Zakaznici$/i, '');
+  } else {
+    base = base.replace(/[\\/]Interni$/i, '');
+  }
+  return base;
+}
+
 function getKnowledgeRoot() {
   const pid = getProjectId();
-  const base = state.metadata.knowledgeBase || 'C:\\Users\\licka\\OneDrive - ARICOMA\\Prace\\projekty\\9999Claude';
+  const rawBase = state.metadata.knowledgeBase || 'C:\\Users\\licka\\OneDrive - ARICOMA\\Prace\\projekty\\9999Claude';
+  const base = sanitizeBase(rawBase, state.metadata.projectType, state.metadata.customer);
   if (state.metadata.projectType === 'ZAK' && state.metadata.customer) {
     return `${base}\\Zakaznici\\${state.metadata.customer}\\${pid}`;
   }
@@ -291,7 +304,8 @@ function getKnowledgeRoot() {
 
 function getExecutionRoot() {
   const pid = getProjectId();
-  const base = state.metadata.executionBase || 'C:\\DEV\\Claude';
+  const rawBase = state.metadata.executionBase || 'C:\\DEV\\Claude';
+  const base = sanitizeBase(rawBase, state.metadata.projectType, state.metadata.customer);
   if (state.metadata.projectType === 'ZAK' && state.metadata.customer) {
     return `${base}\\Zakaznici\\${state.metadata.customer}\\${pid}`;
   }
@@ -408,15 +422,16 @@ function renderStep0() {
   );
 
   html += card(
-    inputField('Knowledge base', m.knowledgeBase, "state.metadata.knowledgeBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\Users\\...\\9999Claude', helpText: 'Korenova cesta pro knowledge layer (OneDrive). Podslozka Interni/Zakaznici se doplni automaticky.' }) +
-    inputField('Execution base', m.executionBase, "state.metadata.executionBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\DEV\\Claude', helpText: 'Korenova cesta pro execution layer (lokalni disk). Podslozka Interni/Zakaznici se doplni automaticky.' })
+    inputField('Knowledge base', m.knowledgeBase, "state.metadata.knowledgeBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\Users\\...\\9999Claude', helpText: 'Korenova cesta BEZ podslozky Interni/Zakaznici — ta se doplni automaticky. Pokud ji zadate, bude odstranena.' }) +
+    inputField('Execution base', m.executionBase, "state.metadata.executionBase=this.value;saveState();updatePreview();", { placeholder: 'C:\\DEV\\Claude', helpText: 'Korenova cesta BEZ podslozky Interni/Zakaznici — ta se doplni automaticky. Pokud ji zadate, bude odstranena.' })
   );
 
   // Derived paths
   html += `<div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 text-xs font-mono">
     <div class="mb-2"><span class="text-zinc-500">PROJECT_ID:</span> <span class="text-zinc-800 font-semibold">${escHtml(getProjectId())}</span></div>
     <div class="mb-2"><span class="text-zinc-500">KNOWLEDGE:</span> <span class="text-zinc-700">${escHtml(getKnowledgeRoot())}</span></div>
-    <div><span class="text-zinc-500">EXECUTION:</span> <span class="text-zinc-700">${escHtml(getExecutionRoot())}</span></div>
+    <div class="mb-2"><span class="text-zinc-500">EXECUTION:</span> <span class="text-zinc-700">${escHtml(getExecutionRoot())}</span></div>
+    <div><span class="text-zinc-500">CONTEXT junction:</span> <span class="text-zinc-700">${escHtml(getExecutionRoot())}\\CONTEXT</span> <span class="text-zinc-400">\u2192</span> <span class="text-zinc-700">${escHtml(getKnowledgeRoot())}</span></div>
   </div>`;
 
   return html;
