@@ -887,6 +887,7 @@ function buildTree() {
 
   // Root files
   tree.children.push({ name: 'README.md', type: 'file' });
+  tree.children.push({ name: 'ContextQuick.md', type: 'file' });
   tree.children.push({ name: 'CLAUDE.md', type: 'file' });
   tree.children.push({ name: 'CHANGELOG.md', type: 'file' });
   tree.children.push({ name: 'EXECUTION_SNAPSHOT.md', type: 'file' });
@@ -1013,24 +1014,27 @@ Vytvor nasledujici slozky:
 
 ${b.vision || '_Vision nebyla definovana._'}
 
----
-
 ## Jak zacit
 
-1. Precti \`PROJECT_STATUS.md\`
-2. Precti \`00_PROJECT_CONTROL/05_PLAN/PLAN.md\`
-3. Pokud pracujes s Claude Code, precti \`CLAUDE.md\`
+1. Precti \`PROJECT_STATUS.md\` — rychly prehled co se deje
+2. Precti \`ContextQuick.md\` — navigacni mapa projektu
+3. Precti \`EXECUTION_SNAPSHOT.md\` — stav execution layer
+4. Podrobnosti v \`00_PROJECT_CONTROL/\` podle potreby
 
-## Korenove soubory
+## Soubory v koreni projektu
 
-| Soubor | Ucel |
-|--------|------|
-| \`PROJECT_STATUS.md\` | Rychly vstup do projektu |
-| \`CHANGELOG.md\` | Log strukturalnich zmen |
-| \`EXECUTION_SNAPSHOT.md\` | Fakticky stav execution layer |
-| \`CLAUDE.md\` | Instrukce pro Claude Code |
-| \`Todo.md\` | Rucni seznam ukolu |
-| \`souhrnGPT.md\` | Souhrn pro externi GPT |
+| Soubor | Ucel | Aktualizuje |
+|---|---|---|
+| \`CLAUDE.md\` | Instrukce pro Claude Code — session protokol, governance, pravidla | Uzivatel |
+| \`ContextQuick.md\` | Navigacni mapa projektu — strukturalni prehled + quick lookup | Claude pri strukturalni zmene |
+| \`CHANGELOG.md\` | Historie strukturalnich zmen projektu (SemVer, Keep a Changelog) | Claude / changelog agent |
+| \`EXECUTION_SNAPSHOT.md\` | Stav execution layer — fakta, ne plan. Most mezi knowledge a execution | Claude na konci session |
+| \`PROJECT_STATUS.md\` | Rychly prehled aktualniho deni pro onboarding cloveka i Claude | Claude navrh + uzivatel schvaleni |
+| \`PROJECT_HISTORY.md\` | Chronologicky zaznam vsech sessions (nejnovejsi nahore) | Skill zvl_end-session |
+| \`souhrnGPT.md\` | Automaticky generovany souhrn pro externi GPT nastroje | Agent souhrn-gpt-updater |
+| \`Todo.md\` | Rucni seznam ukolu | Vyhradne uzivatel |
+
+---
 
 ## Slozky
 
@@ -1044,6 +1048,79 @@ ${b.vision || '_Vision nebyla definovana._'}
 | \`00_PROJECT_CONTROL/06_DATA/\` | Fakta | \`DATA.md\` |
 | \`00_PROJECT_CONTROL/07_RESOURCE/\` | Vstupy | \`RESOURCE.md\` |
 | \`00_PROJECT_CONTROL/08_DEV/\` | Bridge | \`ExecutionLayer.lnk\` |
+\`\`\`
+
+#### ContextQuick.md (root)
+\`\`\`markdown
+# ContextQuick — Navigacni mapa projektu
+
+> **Ucel**: Rychla orientace v projektove strukture pro Claude Code.
+> **Posledni regenerace**: ${today}
+> **Nacitani**: Automaticky pri startu session
+
+---
+
+## Strukturalni mapa
+
+    00_PROJECT_CONTROL/                          [knowledge layer — 7 semantickych vrstev]
+      01_BUSINESS/         PROC (WHY) — scope, vize, stakeholders
+      02_KNOWLEDGE/        CO (WHAT) — procesy, manualy, znalosti
+      03_ARCHITECTURE/     JAK (HOW) — ADR, analyzy, procesni flow
+      04_ENGINEERING/      CIM (WITH WHAT) — implementacni pravidla
+      05_PLAN/             KDY (WHEN) — faze, milniky
+      06_DATA/             Fakta — vystupy analyz
+      07_RESOURCE/         Vstupy — manualy, prompty, vazby
+      08_DEV/              Most na execution layer (ExecutionLayer.lnk)
+
+    10_DELIVERY/                                 [realizace a dodavka]
+      11_MEETINGS/         zapisy z jednani (YYYY-MM-DD_nazev)
+      12_WORK_ITEMS/       BR, FS, TS, DT, CR
+      13_MIGRATION/        SCOPE -> CUTOVER (7 fazi)
+      14_INTEGRATION/      interface catalog, API specs
+      15_TESTING/          test cases, runs, defects
+      16_RELEASE_TRANSPORT/ plan, runbook, notes
+      17_OPERATIONS/       auth, monitoring, support, hypercare
+
+    20_SHARED_REFERENCE/                         [sdilene reference]
+      21_TEMPLATES/        sablony dokumentu
+      22_STANDARDS/        projektove standardy
+      23_NAMING_CONVENTIONS/ konvence pojmenovani
+
+    99_ARCHIVE/            archiv starsich/zrusenych dokumentu
+
+---
+
+## Quick lookup
+
+| Hledam... | Kde najdu |
+|---|---|
+| Business pozadavky (BR/SP) | \`10_DELIVERY/12_WORK_ITEMS/01_BUSINESS_REQUESTS/\` |
+| Funkcni specifikace | \`10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS/\` |
+| Technicke specifikace | \`10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS/\` |
+| Vyvojove ukoly | \`10_DELIVERY/12_WORK_ITEMS/04_DEV_TASKS/\` |
+| Change requesty | \`10_DELIVERY/12_WORK_ITEMS/05_CHANGE_REQUESTS/\` |
+| Test case TC-NNN | \`10_DELIVERY/15_TESTING/02_TEST_CASES/TC-NNN_*.md\` |
+| Test runs | \`10_DELIVERY/15_TESTING/06_TEST_RUNS/\` |
+| Zapisy z jednani | \`10_DELIVERY/11_MEETINGS/\` |
+| Integracni katalog | \`10_DELIVERY/14_INTEGRATION/01_INTERFACE_CATALOG/\` |
+| Architektura (ADR) | \`00_PROJECT_CONTROL/03_ARCHITECTURE/ADR/\` |
+| Procesni manualy | \`00_PROJECT_CONTROL/02_KNOWLEDGE/01_MANUALS/\` |
+| Sablony | \`20_SHARED_REFERENCE/21_TEMPLATES/\` |
+
+---
+
+## Ridici soubory projektu
+
+| Soubor | Role | Claude nacita |
+|---|---|---|
+| \`CLAUDE.md\` | Governance, session protocol, opravneni | ANO (auto-load) |
+| \`ContextQuick.md\` | Navigacni mapa (tento soubor) | ANO (session start) |
+| \`EXECUTION_SNAPSHOT.md\` | Stav execution layer | ANO (session start) |
+| \`PROJECT_STATUS.md\` | Posledni session, aktualni prace | ANO (session start) |
+| \`PROJECT_HISTORY.md\` | Chronologie vsech sessions | NE (lazy, on demand) |
+| \`CHANGELOG.md\` | Strukturalni zmeny (SemVer) | NE (lazy, on demand) |
+| \`Todo.md\` | Seznam ukolu | NE (lazy, on demand) |
+| \`souhrnGPT.md\` | Souhrn pro externi GPT nastroje | ZAKAZANO pro Claude |
 \`\`\`
 
 #### 00_PROJECT_CONTROL/01_BUSINESS/BUSINESS.md
