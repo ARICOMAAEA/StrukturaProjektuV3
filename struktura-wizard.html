@@ -877,9 +877,16 @@ function buildTree() {
     if (t.meetingNote) tpls.push({ name: 'meeting-note-template.md', type: 'file' });
     if (t.meetingScreenshots) tpls.push({ name: 'meeting-screenshots-template.md', type: 'file' });
     if (t.testCase) tpls.push({ name: 'test-case-template.md', type: 'file' });
-    tree.children.push({ name: '20_SHARED_REFERENCE', type: 'dir', children: [
+    const sharedRefChildren = [
       { name: '21_TEMPLATES', type: 'dir', children: tpls },
-    ]});
+      { name: '22_STANDARDS', type: 'dir', children: [
+        { name: 'TAGS.md', type: 'file' },
+      ]},
+      { name: '23_NAMING_CONVENTIONS', type: 'dir', children: [
+        { name: 'README.md', type: 'file' },
+      ]},
+    ];
+    tree.children.push({ name: '20_SHARED_REFERENCE', type: 'dir', children: sharedRefChildren });
   }
 
   // 99_ARCHIVE
@@ -895,6 +902,12 @@ function buildTree() {
   tree.children.push({ name: 'PROJECT_HISTORY.md', type: 'file' });
   tree.children.push({ name: 'Todo.md', type: 'file' });
   tree.children.push({ name: 'souhrnGPT.md', type: 'file' });
+  if (state.delivery.preset !== 'Minimal') {
+    tree.children.push({ name: 'ID_REGISTRY.md', type: 'file' });
+    tree.children.push({ name: 'TOPIC_MAP.md', type: 'file' });
+    tree.children.push({ name: 'GLOSSARY.md', type: 'file' });
+    tree.children.push({ name: 'STALE.md', type: 'file' });
+  }
 
   return tree;
 }
@@ -998,6 +1011,8 @@ Vytvor nasledujici slozky:
     if (del.releaseTransport) dirs.push('10_DELIVERY/16_RELEASE_TRANSPORT');
     if (del.operations) dirs.push('10_DELIVERY/17_OPERATIONS');
     dirs.push('20_SHARED_REFERENCE/21_TEMPLATES');
+    dirs.push('20_SHARED_REFERENCE/22_STANDARDS');
+    dirs.push('20_SHARED_REFERENCE/23_NAMING_CONVENTIONS');
   }
   dirs.push('99_ARCHIVE');
 
@@ -1033,6 +1048,10 @@ ${b.vision || '_Vision nebyla definovana._'}
 | \`PROJECT_HISTORY.md\` | Chronologicky zaznam vsech sessions (nejnovejsi nahore) | Skill zvl_end-session |
 | \`souhrnGPT.md\` | Automaticky generovany souhrn pro externi GPT nastroje | Agent souhrn-gpt-updater |
 | \`Todo.md\` | Rucni seznam ukolu | Vyhradne uzivatel |
+${state.delivery.preset !== 'Minimal' ? `| \`ID_REGISTRY.md\` | Lookup table projektovych ID (BR/SP/FS/TS/DEV/CR/TC) | Claude pri reindexu |
+| \`TOPIC_MAP.md\` | Kanonicky zdroj pro cross-cutting temata | Claude pri reindexu |
+| \`GLOSSARY.md\` | Glosar pojmu, zkratek, roli | Claude / uzivatel |
+| \`STALE.md\` | Sledovani neplatnych odkazu v indexech | Claude automaticky |` : ''}
 
 ---
 
@@ -1106,6 +1125,9 @@ ${b.vision || '_Vision nebyla definovana._'}
 | Architektura (ADR) | \`00_PROJECT_CONTROL/03_ARCHITECTURE/ADR/\` |
 | Procesni manualy | \`00_PROJECT_CONTROL/02_KNOWLEDGE/01_MANUALS/\` |
 | Sablony | \`20_SHARED_REFERENCE/21_TEMPLATES/\` |
+| ID registr (BR/SP/FS/TC/...) | \`ID_REGISTRY.md\` |
+| Glosar / zkratky | \`GLOSSARY.md\` |
+| Cross-cutting temata | \`TOPIC_MAP.md\` |
 
 ---
 
@@ -1121,6 +1143,10 @@ ${b.vision || '_Vision nebyla definovana._'}
 | \`CHANGELOG.md\` | Strukturalni zmeny (SemVer) | NE (lazy, on demand) |
 | \`Todo.md\` | Seznam ukolu | NE (lazy, on demand) |
 | \`souhrnGPT.md\` | Souhrn pro externi GPT nastroje | ZAKAZANO pro Claude |
+| \`ID_REGISTRY.md\` | Lookup table vsech projektovych ID | NE (lazy, on demand) |
+| \`TOPIC_MAP.md\` | Cross-cutting temata s kanonickymi zdroji | NE (lazy, on demand) |
+| \`GLOSSARY.md\` | Glosar pojmu a zkratek | NE (lazy, on demand) |
+| \`STALE.md\` | Sledovani neplatnych odkazu v indexech | NE (lazy, on demand) |
 \`\`\`
 
 #### 00_PROJECT_CONTROL/01_BUSINESS/BUSINESS.md
@@ -1244,7 +1270,252 @@ _Zadne._
 
 _Zadne._
 \`\`\`
+`;
 
+  // Discovery layer files (non-Minimal only)
+  if (state.delivery.preset !== 'Minimal') {
+    prompt += `
+#### ID_REGISTRY.md (root)
+\`\`\`markdown
+# ID Registry
+
+> Jediny autoritativni lookup table pro vsechna ID v projektu.
+> Posledni aktualizace: ${today}.
+
+## Business Requests (BR)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne BR zatim._ |
+
+## Functional Specs (FS)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne FS zatim._ |
+
+## Technical Specs (TS)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne TS zatim._ |
+
+## Test Cases (TC)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne TC zatim._ |
+
+## Change Requests (CR)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne CR zatim._ |
+
+## Dev Tasks (DEV)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne DEV zatim._ |
+
+## Custom Objects
+
+| ID | Kanonicky soubor | Typ | Strucne |
+|---|---|---|---|
+| _Zadne custom objekty zatim._ |
+\`\`\`
+
+#### TOPIC_MAP.md (root)
+\`\`\`markdown
+# Topic Map
+
+> Kanonicky zdroj a derived artefakty pro kazde cross-cutting tema.
+> Pri dotazu na tema cti nejdriv kanonicky zdroj, derivovane soubory jen pokud je to potreba.
+> Posledni aktualizace: ${today}.
+
+## Jak pouzivat
+
+Pro kazde tema projektu doplnit:
+- **Canonical:** hlavni soubor s autoritativnim obsahem
+- **Business:** navazane BR/SP tickety
+- **Architektura:** architektonicke analyzy a rozhodnuti
+- **Procesy:** procesni popisy
+- **Integrace:** rozhrani a integracni body
+- **Testy:** navazane test cases
+- **Tags:** klicova slova pro vyhledavani
+
+## Priklad
+
+_Doplnit temata projektu. Format:_
+
+### <Nazev tematu>
+
+- **Canonical:** \\\`<cesta ke kanonickemu souboru>\\\` (nebo MISSING — TODO)
+- **Business:** <navazane BR/SP>
+- **Architektura:** <navazane architektonicke soubory>
+- **Procesy:** <navazane procesni soubory>
+- **Testy:** <navazane TC>
+- **Tags:** <klicova slova>
+\`\`\`
+
+#### GLOSSARY.md (root)
+\`\`\`markdown
+# Glossary
+
+> Glosar pojmu, zkratek a roli pouzivanych v projektu.
+> Posledni aktualizace: ${today}.
+
+## Projektove pojmy
+
+| Pojem | Vyznam | Kontext |
+|---|---|---|
+| _Doplnit pojmy specificke pro projekt._ |
+
+## Technicke pojmy
+
+| Pojem / Zkratka | Vyznam | Kde se pouziva |
+|---|---|---|
+| BR | Business Request | 12_WORK_ITEMS/01_BUSINESS_REQUESTS/ |
+| SP | Sprint Item | 12_WORK_ITEMS/01_BUSINESS_REQUESTS/ |
+| FS | Functional Spec | 12_WORK_ITEMS/02_FUNCTIONAL_SPECS/ |
+| TS | Technical Spec | 12_WORK_ITEMS/03_TECHNICAL_SPECS/ |
+| DEV | Dev Task | 12_WORK_ITEMS/04_DEV_TASKS/ |
+| CR | Change Request | 12_WORK_ITEMS/05_CHANGE_REQUESTS/ |
+| TC | Test Case | 15_TESTING/02_TEST_CASES/ |
+| ADR | Architectural Decision Record | 03_ARCHITECTURE/ADR/ |
+
+## Custom objekty
+
+| Objekt | Typ | Strucne |
+|---|---|---|
+| _Doplnit custom objekty projektu._ |
+
+## Role a osoby
+
+| Jmeno / Role | Funkce v projektu |
+|---|---|
+| _Doplnit projektove role._ |
+\`\`\`
+
+#### STALE.md (root)
+\`\`\`markdown
+# Stale index entries
+
+> Odkazy v indexech, ktere nesedi s realitou.
+> Claude sem pridava radky kdykoli narazi na nesedici odkaz.
+> Uzivatel schvaluje opravu (mazani nebo update odkazu).
+
+| Kdy zjisteno | Kde | Mrtvy odkaz | Navrhovana akce |
+|---|---|---|---|
+| _Zadne stale odkazy zatim._ |
+\`\`\`
+
+#### 20_SHARED_REFERENCE/22_STANDARDS/TAGS.md
+\`\`\`markdown
+# Controlled Vocabulary — Tags
+
+> Zdroj pravdy pro vsechny tagy pouzivane ve frontmatter projektu.
+> Nove tagy pridavej sem s jednovetym popisem.
+
+## Typy artefaktu
+
+| Tag | Popis |
+|---|---|
+| business-request | Business pozadavek (BR) |
+| functional-spec | Funkcni specifikace (FS) |
+| technical-spec | Technicka specifikace (TS) |
+| test-case | Testovaci pripad (TC) |
+| change-request | Change request (CR) |
+| dev-task | Vyvojovy ukol (DEV) |
+| integration | Integracni specifikace |
+| adr | Architectural Decision Record |
+
+## Procesni tagy
+
+| Tag | Popis |
+|---|---|
+| workshop | Workshopovy zapis |
+| integration-test | Integracni testovani |
+| uat | User Acceptance Testing |
+| training | Skoleni |
+| handover | Predani |
+
+## Domenove tagy
+
+_Doplnit tagy specificke pro domenu projektu._
+
+| Tag | Popis |
+|---|---|
+\`\`\`
+
+#### 20_SHARED_REFERENCE/23_NAMING_CONVENTIONS/README.md
+\`\`\`markdown
+# Naming Conventions
+
+> Konvence pojmenovani souboru a slozek v projektu.
+
+## Work Items
+
+- Business Requests: \\\`BR-NNN_<kebab-case-titulek>.md\\\`
+- Sprint Items: \\\`SP-NNNN_<kebab-case-titulek>.md\\\`
+- Functional Specs: \\\`FS-NNN_<kebab-case-titulek>.md\\\`
+- Technical Specs: \\\`TS-NNN_<kebab-case-titulek>.md\\\`
+- Dev Tasks: \\\`DEV-NNN_<kebab-case-titulek>.md\\\`
+- Change Requests: \\\`CR-NNN_<kebab-case-titulek>.md\\\`
+
+## Test Cases
+
+- \\\`TC-NNN_<feature-slug>.md\\\`
+
+## Meetings
+
+- Slozka: \\\`YYYY-MM-DD_<typ>[-<varianta>]/\\\`
+- Typy: workshop, interni, skoleni, integracni-test, review
+- Uvnitr: \\\`meeting-note.md\\\`, pripadne \\\`transcript/\\\`, \\\`screens/\\\`
+
+## ADR (Architectural Decision Records)
+
+- \\\`NNN-<kebab-case-nazev>.md\\\`
+
+## Integrace
+
+- \\\`<PREFIX>_<tema>.md\\\` (napr. INT_api-sync.md)
+
+## Obecna pravidla
+
+- Nazvy souboru: lowercase, kebab-case, bez mezer a diakritiky
+- ID prefix vzdy velkymi pismeny (BR, SP, TC, ...)
+- Datumy: YYYY-MM-DD format
+\`\`\`
+
+#### CLAUDE.md — Discovery sections
+Do souboru CLAUDE.md pridej nasledujici dve sekce (za existujici sekce):
+
+\`\`\`markdown
+## Search protocol
+
+Pro jakekoliv hledani v projektu dodrzuj toto poradi. Nedelat full-project grep, dokud indexy neco nevrati.
+
+1. **Top-level \\\`ContextQuick.md\\\`** — topic index a quick lookup.
+2. **\\\`ID_REGISTRY.md\\\`** — pokud hledas konkretni ID (BR/SP/FS/TS/DEV/CR/TC). Jednu kanonickou cestu vrati okamzite.
+3. **\\\`TOPIC_MAP.md\\\`** — pro cross-cutting temata. Ukaze kanonicky zdroj a seznam derived souboru.
+4. **\\\`GLOSSARY.md\\\`** — pro zkratky, aliasy, termy.
+5. **Grep/Glob** — teprve pokud indexy vrati nic. Vzdy scoped na podslozku, nikdy na cely projekt.
+
+Pokud index vrati stale vysledek (neexistujici soubor, mrtvy odkaz), **zaznamenej do \\\`STALE.md\\\`** a v zaveru session navrh update.
+
+## Don't-read list
+
+Tyto soubory **nikdy necti automaticky**. Cti pouze pokud uzivatel explicitne pozada NEBO pokud kanonicky zdroj odpoved neobsahuje.
+
+- \\\`souhrnGPT.md\\\` — generovano pro externi GPT, pro Claude redundantni.
+- \\\`PROJECT_HISTORY.md\\\` — chronologie sessions, muze byt velmi velky.
+- \\\`99_ARCHIVE/**\\\` — archivovany obsah.
+\`\`\`
+`;
+  }
+
+  prompt += `
 ## Execution Layer: ${eRoot}
 
 ### Adresarova struktura
@@ -1309,6 +1580,8 @@ function generatePowerShell() {
     if (del.releaseTransport) dirs.push('10_DELIVERY\\16_RELEASE_TRANSPORT');
     if (del.operations) dirs.push('10_DELIVERY\\17_OPERATIONS');
     dirs.push('20_SHARED_REFERENCE\\21_TEMPLATES');
+    dirs.push('20_SHARED_REFERENCE\\22_STANDARDS');
+    dirs.push('20_SHARED_REFERENCE\\23_NAMING_CONVENTIONS');
   }
 
   const dirsList = dirs.map(d => `    "${d}"`).join(',\n');
@@ -1558,7 +1831,228 @@ Write-Ok "souhrnGPT.md"
 # PROJECT_HISTORY.md
 [System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "PROJECT_HISTORY.md"), "# PROJECT_HISTORY\n\n> Append-only session archiv. Nejnovejsi nahore.\n\n---\n\n## Session 1 — ${today}\n\n- **Tema**: Inicializace projektu\n- **Autor**: System\n- **Dokonceno**: Zalozeni projektove struktury Meta Framework V3\n", [System.Text.Encoding]::UTF8)
 Write-Ok "PROJECT_HISTORY.md"
+`;
 
+  // Discovery layer files (non-Minimal only) — PowerShell
+  if (state.delivery.preset !== 'Minimal') {
+    script += `
+# ID_REGISTRY.md
+$idRegistryContent = @"
+# ID Registry
+
+> Jediny autoritativni lookup table pro vsechna ID v projektu.
+> Posledni aktualizace: ${today}.
+
+## Business Requests (BR)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne BR zatim._ |
+
+## Functional Specs (FS)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne FS zatim._ |
+
+## Technical Specs (TS)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne TS zatim._ |
+
+## Test Cases (TC)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne TC zatim._ |
+
+## Change Requests (CR)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne CR zatim._ |
+
+## Dev Tasks (DEV)
+
+| ID | Kanonicky soubor | Status | Strucne | Tags |
+|---|---|---|---|---|
+| _Zadne DEV zatim._ |
+
+## Custom Objects
+
+| ID | Kanonicky soubor | Typ | Strucne |
+|---|---|---|---|
+| _Zadne custom objekty zatim._ |
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "ID_REGISTRY.md"), $idRegistryContent, [System.Text.Encoding]::UTF8)
+Write-Ok "ID_REGISTRY.md"
+
+# TOPIC_MAP.md
+$topicMapContent = @"
+# Topic Map
+
+> Kanonicky zdroj a derived artefakty pro kazde cross-cutting tema.
+> Pri dotazu na tema cti nejdriv kanonicky zdroj, derivovane soubory jen pokud je to potreba.
+> Posledni aktualizace: ${today}.
+
+## Jak pouzivat
+
+Pro kazde tema projektu doplnit:
+- **Canonical:** hlavni soubor s autoritativnim obsahem
+- **Business:** navazane BR/SP tickety
+- **Architektura:** architektonicke analyzy a rozhodnuti
+- **Procesy:** procesni popisy
+- **Integrace:** rozhrani a integracni body
+- **Testy:** navazane test cases
+- **Tags:** klicova slova pro vyhledavani
+
+_Doplnit temata projektu._
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "TOPIC_MAP.md"), $topicMapContent, [System.Text.Encoding]::UTF8)
+Write-Ok "TOPIC_MAP.md"
+
+# GLOSSARY.md
+$glossaryContent = @"
+# Glossary
+
+> Glosar pojmu, zkratek a roli pouzivanych v projektu.
+> Posledni aktualizace: ${today}.
+
+## Projektove pojmy
+
+| Pojem | Vyznam | Kontext |
+|---|---|---|
+| _Doplnit pojmy specificke pro projekt._ |
+
+## Technicke pojmy
+
+| Pojem / Zkratka | Vyznam | Kde se pouziva |
+|---|---|---|
+| BR | Business Request | 12_WORK_ITEMS/01_BUSINESS_REQUESTS/ |
+| SP | Sprint Item | 12_WORK_ITEMS/01_BUSINESS_REQUESTS/ |
+| FS | Functional Spec | 12_WORK_ITEMS/02_FUNCTIONAL_SPECS/ |
+| TS | Technical Spec | 12_WORK_ITEMS/03_TECHNICAL_SPECS/ |
+| DEV | Dev Task | 12_WORK_ITEMS/04_DEV_TASKS/ |
+| CR | Change Request | 12_WORK_ITEMS/05_CHANGE_REQUESTS/ |
+| TC | Test Case | 15_TESTING/02_TEST_CASES/ |
+| ADR | Architectural Decision Record | 03_ARCHITECTURE/ADR/ |
+
+## Custom objekty
+
+| Objekt | Typ | Strucne |
+|---|---|---|
+| _Doplnit custom objekty projektu._ |
+
+## Role a osoby
+
+| Jmeno / Role | Funkce v projektu |
+|---|---|
+| _Doplnit projektove role._ |
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "GLOSSARY.md"), $glossaryContent, [System.Text.Encoding]::UTF8)
+Write-Ok "GLOSSARY.md"
+
+# STALE.md
+$staleContent = @"
+# Stale index entries
+
+> Odkazy v indexech, ktere nesedi s realitou.
+> Claude sem pridava radky kdykoli narazi na nesedici odkaz.
+> Uzivatel schvaluje opravu (mazani nebo update odkazu).
+
+| Kdy zjisteno | Kde | Mrtvy odkaz | Navrhovana akce |
+|---|---|---|---|
+| _Zadne stale odkazy zatim._ |
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "STALE.md"), $staleContent, [System.Text.Encoding]::UTF8)
+Write-Ok "STALE.md"
+
+# 22_STANDARDS/TAGS.md
+$tagsContent = @"
+# Controlled Vocabulary -- Tags
+
+> Zdroj pravdy pro vsechny tagy pouzivane ve frontmatter projektu.
+> Nove tagy pridavej sem s jednovetym popisem.
+
+## Typy artefaktu
+
+| Tag | Popis |
+|---|---|
+| business-request | Business pozadavek (BR) |
+| functional-spec | Funkcni specifikace (FS) |
+| technical-spec | Technicka specifikace (TS) |
+| test-case | Testovaci pripad (TC) |
+| change-request | Change request (CR) |
+| dev-task | Vyvojovy ukol (DEV) |
+| integration | Integracni specifikace |
+| adr | Architectural Decision Record |
+
+## Procesni tagy
+
+| Tag | Popis |
+|---|---|
+| workshop | Workshopovy zapis |
+| integration-test | Integracni testovani |
+| uat | User Acceptance Testing |
+| training | Skoleni |
+| handover | Predani |
+
+## Domenove tagy
+
+_Doplnit tagy specificke pro domenu projektu._
+
+| Tag | Popis |
+|---|---|
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "20_SHARED_REFERENCE\\22_STANDARDS\\TAGS.md"), $tagsContent, [System.Text.Encoding]::UTF8)
+Write-Ok "TAGS.md"
+
+# 23_NAMING_CONVENTIONS/README.md
+$namingContent = @"
+# Naming Conventions
+
+> Konvence pojmenovani souboru a slozek v projektu.
+
+## Work Items
+
+- Business Requests: ``BR-NNN_<kebab-case-titulek>.md``
+- Sprint Items: ``SP-NNNN_<kebab-case-titulek>.md``
+- Functional Specs: ``FS-NNN_<kebab-case-titulek>.md``
+- Technical Specs: ``TS-NNN_<kebab-case-titulek>.md``
+- Dev Tasks: ``DEV-NNN_<kebab-case-titulek>.md``
+- Change Requests: ``CR-NNN_<kebab-case-titulek>.md``
+
+## Test Cases
+
+- ``TC-NNN_<feature-slug>.md``
+
+## Meetings
+
+- Slozka: ``YYYY-MM-DD_<typ>[-<varianta>]/``
+- Typy: workshop, interni, skoleni, integracni-test, review
+- Uvnitr: ``meeting-note.md``, pripadne ``transcript/``, ``screens/``
+
+## ADR (Architectural Decision Records)
+
+- ``NNN-<kebab-case-nazev>.md``
+
+## Integrace
+
+- ``<PREFIX>_<tema>.md`` (napr. INT_api-sync.md)
+
+## Obecna pravidla
+
+- Nazvy souboru: lowercase, kebab-case, bez mezer a diakritiky
+- ID prefix vzdy velkymi pismeny (BR, SP, TC, ...)
+- Datumy: YYYY-MM-DD format
+"@
+[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "20_SHARED_REFERENCE\\23_NAMING_CONVENTIONS\\README.md"), $namingContent, [System.Text.Encoding]::UTF8)
+Write-Ok "NAMING_CONVENTIONS/README.md"
+`;
+  }
+
+  script += `
 # ── Krok 3: Execution layer ──────────────────────────────────
 Write-Step "Krok 3/5 -- Vytvareni execution layer..."
 
@@ -1605,7 +2099,9 @@ $checks = @(
     (Join-Path $knowledgeRoot "EXECUTION_SNAPSHOT.md"),
     (Join-Path $knowledgeRoot "README.md"),
     (Join-Path $knowledgeRoot "PROJECT_STATUS.md"),
-    (Join-Path $executionRoot "CONTEXT")
+    (Join-Path $executionRoot "CONTEXT")${state.delivery.preset !== 'Minimal' ? `,
+    (Join-Path $knowledgeRoot "ID_REGISTRY.md"),
+    (Join-Path $knowledgeRoot "GLOSSARY.md")` : ''}
 )
 
 $allOk = $true

@@ -43,13 +43,20 @@ Generates complete Meta Framework Model project structures with 7 semantic layer
 │   ├── 15_TESTING/01-06/              (Full only)
 │   ├── 16_RELEASE_TRANSPORT/          (Full only)
 │   └── 17_OPERATIONS/                 (Full only)
-├── 20_SHARED_REFERENCE/21_TEMPLATES/   (Standard+)
+├── 20_SHARED_REFERENCE/                (Standard+)
+│   ├── 21_TEMPLATES/
+│   ├── 22_STANDARDS/TAGS.md
+│   └── 23_NAMING_CONVENTIONS/README.md
 ├── 99_ARCHIVE/
 ├── CHANGELOG.md
 ├── EXECUTION_SNAPSHOT.md
+├── GLOSSARY.md                         (Standard+)
+├── ID_REGISTRY.md                      (Standard+)
 ├── PROJECT_HISTORY.md
 ├── PROJECT_STATUS.md
 ├── README.md
+├── STALE.md                            (Standard+)
+├── TOPIC_MAP.md                        (Standard+)
 ├── Todo.md
 └── souhrnGPT.md
 
@@ -64,5 +71,20 @@ Generates complete Meta Framework Model project structures with 7 semantic layer
 | Preset | Sections |
 |--------|----------|
 | **Minimal** | Core layers (01-07) + 99_ARCHIVE only |
-| **Standard** | + 11_MEETINGS, 12_WORK_ITEMS, 20_SHARED_REFERENCE |
+| **Standard** | + 11_MEETINGS, 12_WORK_ITEMS, 20_SHARED_REFERENCE, Discovery Layer |
 | **Full** | + 13_MIGRATION, 14_INTEGRATION, 15_TESTING, 16_RELEASE_TRANSPORT, 17_OPERATIONS |
+
+## Discovery layer (Standard+)
+
+Generated automatically for non-Minimal presets. Provides metadata and indexes for faster project navigation:
+
+| File | Purpose |
+|------|---------|
+| `ID_REGISTRY.md` | Lookup table for all project IDs (BR, SP, FS, TS, DEV, CR, TC) |
+| `TOPIC_MAP.md` | Cross-cutting topics with canonical sources |
+| `GLOSSARY.md` | Terms, abbreviations, custom objects, roles |
+| `STALE.md` | Tracking dead links in indexes |
+| `22_STANDARDS/TAGS.md` | Controlled vocabulary for frontmatter tags |
+| `23_NAMING_CONVENTIONS/README.md` | File and folder naming patterns |
+
+Also adds **Search protocol** and **Don't-read list** sections to CLAUDE.md.
