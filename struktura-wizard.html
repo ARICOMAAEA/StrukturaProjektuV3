@@ -693,7 +693,7 @@ function renderStep8() {
       checkboxField('14_INTEGRATION', d.custom.integration, "state.delivery.custom.integration=this.checked;saveState();updatePreview();", '— interface catalog, API specs') +
       checkboxField('15_TESTING', d.custom.testing, "state.delivery.custom.testing=this.checked;saveState();updatePreview();", '— test strategy, cases, runs, defects') +
       checkboxField('16_RELEASE_TRANSPORT', d.custom.releaseTransport, "state.delivery.custom.releaseTransport=this.checked;saveState();updatePreview();", '— transport plan, runbook') +
-      checkboxField('17_OPERATIONS', d.custom.operations, "state.delivery.custom.operations=this.checked;saveState();updatePreview();", '— authorizations, monitoring')
+      checkboxField('17_OPERATIONS', d.custom.operations, "state.delivery.custom.operations=this.checked;saveState();updatePreview();", '— auth, monitoring, support, manuals')
     );
   }
 
@@ -908,7 +908,10 @@ function buildTree() {
       { name: '05_UAT', type: 'dir', children: [] }, { name: '06_TEST_RUNS', type: 'dir', children: [] },
     ]});
     if (del.releaseTransport) delivery.children.push({ name: '16_RELEASE_TRANSPORT', type: 'dir', children: [] });
-    if (del.operations) delivery.children.push({ name: '17_OPERATIONS', type: 'dir', children: [] });
+    if (del.operations) delivery.children.push({ name: '17_OPERATIONS', type: 'dir', children: [
+      { name: '01_AUTH', type: 'dir', children: [] }, { name: '02_MONITORING', type: 'dir', children: [] },
+      { name: '03_SUPPORT', type: 'dir', children: [] }, { name: '04_MANUALS', type: 'dir', children: [] },
+    ]});
     if (delivery.children.length) tree.children.push(delivery);
   }
 
@@ -1062,7 +1065,9 @@ Vytvor nasledujici slozky:
         '10_DELIVERY/15_TESTING/05_UAT', '10_DELIVERY/15_TESTING/06_TEST_RUNS');
     }
     if (del.releaseTransport) dirs.push('10_DELIVERY/16_RELEASE_TRANSPORT');
-    if (del.operations) dirs.push('10_DELIVERY/17_OPERATIONS');
+    if (del.operations) {
+      ['01_AUTH','02_MONITORING','03_SUPPORT','04_MANUALS'].forEach(d => dirs.push(`10_DELIVERY/17_OPERATIONS/${d}`));
+    }
     dirs.push('20_SHARED_REFERENCE/21_TEMPLATES');
     dirs.push('20_SHARED_REFERENCE/22_STANDARDS');
     dirs.push('20_SHARED_REFERENCE/23_NAMING_CONVENTIONS');
@@ -1162,7 +1167,7 @@ ${state.delivery.preset !== 'Minimal' ? `| \`ID_REGISTRY.md\` | Lookup table pro
       14_INTEGRATION/      interface catalog, API specs
       15_TESTING/          test cases, runs, defects
       16_RELEASE_TRANSPORT/ plan, runbook, notes
-      17_OPERATIONS/       auth, monitoring, support, hypercare
+      17_OPERATIONS/       01_AUTH, 02_MONITORING, 03_SUPPORT, 04_MANUALS
 
     20_SHARED_REFERENCE/                         [sdilene reference]
       21_TEMPLATES/        sablony dokumentu
@@ -1642,7 +1647,9 @@ function generatePowerShell() {
       ['01_TEST_STRATEGY','02_TEST_CASES','03_TEST_DATA','04_DEFECTS','05_UAT','06_TEST_RUNS'].forEach(d => dirs.push(`10_DELIVERY\\15_TESTING\\${d}`));
     }
     if (del.releaseTransport) dirs.push('10_DELIVERY\\16_RELEASE_TRANSPORT');
-    if (del.operations) dirs.push('10_DELIVERY\\17_OPERATIONS');
+    if (del.operations) {
+      ['01_AUTH','02_MONITORING','03_SUPPORT','04_MANUALS'].forEach(d => dirs.push(`10_DELIVERY\\17_OPERATIONS\\${d}`));
+    }
     dirs.push('20_SHARED_REFERENCE\\21_TEMPLATES');
     dirs.push('20_SHARED_REFERENCE\\22_STANDARDS');
     dirs.push('20_SHARED_REFERENCE\\23_NAMING_CONVENTIONS');
