@@ -7,6 +7,17 @@ Generates complete Meta Framework Model project structures with 7 semantic layer
 | File | Description |
 |------|-------------|
 | `struktura-wizard.html` | Browser-based wizard — fill in steps or import a template |
+| `diagrams/architecture-overview.html` | One-page visual overview of the whole tool — input, engine, output, two-layer structure, automation, lifecycle |
+
+## Architecture diagram
+
+For a one-page visual explanation of how the wizard, generated structure, automation (skills/agents/hooks), and lifecycle rules fit together, open:
+
+```
+diagrams/architecture-overview.html
+```
+
+It is a single self-contained HTML file (dark theme, inline SVG, no build step). Open it directly in a browser via `file://`. Use it for onboarding new users, presentations, or as a refresher before working with the framework.
 
 ## Requirements
 
@@ -88,3 +99,11 @@ Generated automatically for non-Minimal presets. Provides metadata and indexes f
 | `23_NAMING_CONVENTIONS/README.md` | File and folder naming patterns |
 
 Also adds **Search protocol** and **Don't-read list** sections to CLAUDE.md.
+
+## Recent updates
+
+- **2026-05-03** — Wizard A-patch (v1.7.0): `struktura-wizard.html` now generates everything back-ported in v1.6.x. New checkboxes in Step 4 (Engineering: `zvl_knowledge-builder`, `zvl_new-meeting`, `zvl_meeting-from-transcript`, `session-guard.ps1`) and Step 8 (Delivery: 4 new templates, 2 SAP standards, 2 governance META files). Tree preview + Claude Code prompt + PowerShell init script all updated. Wizard grew 111 KB → 118 KB.
+- **2026-05-03** — Generalization pass (v1.6.2): rewrote 11 root governance META files (`README.md`, `START_HERE.md`, `STALE.md`, `souhrnGPT.md`, `TOPIC_MAP.md`, `ID_REGISTRY.md`, `DIAGRAMS_INDEX.md`, `GLOSSARY.md`, `ContextQuick.md`, plus the two sub-folder ContextQuicks) into project-agnostic schemas with `{{PLACEHOLDER}}` slots. KOFOLA-content quarantine (`_NEEDS_GENERALIZATION_FROM_KOFOLA/`) deleted. Knowledge layer is now fully template-clean — zero customer references in any of the 15 root .md files.
+- **2026-05-03** — Logic-only back-port from WIKOV (v1.6.1): added skill `zvl_meeting-from-transcript`, templates `meetings-overview-template.md` + `br-all-template.md`, and layer schema `10_DELIVERY/11_MEETINGS/README.md`. The skill propagates `(BR)`-flagged points from meeting transcripts into `BR-ALL.md` and keeps `MEETINGS_OVERVIEW.md` in sync (`PENDING/REVIEWED` workflow). Wizard checkboxes still pending.
+- **2026-05-01** — Added `diagrams/architecture-overview.html` — single-page visual overview (6 zones: Input / Engine / Output / Generated structure / Automation / Lifecycle). Generated via the `architecture-diagram` skill.
+- **2026-05-01** — Template back-port v1.6.0: imported 5 skills, 4 agents, 1 hook, 7 delivery templates, 5 standards, 9 layer-schema READMEs from KOFOLA. 12 governance META files quarantined in `_NEEDS_GENERALIZATION_FROM_KOFOLA/` for manual generalization. Wizard checkboxes pending.

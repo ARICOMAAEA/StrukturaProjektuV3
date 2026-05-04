@@ -176,8 +176,9 @@ const defaultState = {
   engineering: {
     codingStandards: '',
     tools: [''],
-    agents: { changelog: true, mdPostprocessor: false, souhrnGpt: true },
-    skills: { aiMarkdown: true, keepChangelog: true, endSession: true, workItems: false },
+    agents: { changelog: true, mdPostprocessor: false, souhrnGpt: true, knowledgeBuilder: false },
+    skills: { aiMarkdown: true, keepChangelog: true, endSession: true, workItems: true, newMeeting: true, meetingFromTranscript: false },
+    hooks: { sessionGuard: true },
   },
   plan: {
     phases: [
@@ -204,8 +205,15 @@ const defaultState = {
       testing: false, releaseTransport: false, operations: false,
     },
     templates: {
-      businessRequest: true, changeRequest: true, meetingNote: true,
-      meetingScreenshots: true, testCase: true,
+      businessRequest: true, businessRequestV2: true, brFindings: true, brAll: true,
+      changeRequest: true, meetingNote: true, meetingScreenshots: true,
+      meetingsOverview: true, testCase: true,
+    },
+    standards: {
+      dbDesignRules: false, goldenRulesUi5: false,
+    },
+    governance: {
+      startHere: true, diagramsIndex: true,
     },
   },
 };
@@ -518,16 +526,22 @@ function renderStep4() {
     repeatableField('Tools', e.tools, 'state.engineering.tools', 'Nastroje pouzivane v projektu.')
   );
 
+  const h = e.hooks || { sessionGuard: true };
   html += card(
     `<label class="block text-sm font-medium text-zinc-700 mb-3">Agents</label>` +
-    checkboxField('changelog-manager', e.agents.changelog, "state.engineering.agents.changelog=this.checked;saveState();", '— automaticky aktualizuje CHANGELOG.md') +
-    checkboxField('md-postprocessor', e.agents.mdPostprocessor, "state.engineering.agents.mdPostprocessor=this.checked;saveState();", '— normalizace Markdown') +
-    checkboxField('souhrn-gpt-updater', e.agents.souhrnGpt, "state.engineering.agents.souhrnGpt=this.checked;saveState();", '— generuje souhrnGPT.md') +
+    checkboxField('changelog-manager', e.agents.changelog, "state.engineering.agents.changelog=this.checked;saveState();updatePreview();", '— automaticky aktualizuje CHANGELOG.md') +
+    checkboxField('md-postprocessor', e.agents.mdPostprocessor, "state.engineering.agents.mdPostprocessor=this.checked;saveState();updatePreview();", '— normalizace Markdown') +
+    checkboxField('souhrn-gpt-updater', e.agents.souhrnGpt, "state.engineering.agents.souhrnGpt=this.checked;saveState();updatePreview();", '— generuje souhrnGPT.md') +
+    checkboxField('zvl_knowledge-builder', e.agents.knowledgeBuilder, "state.engineering.agents.knowledgeBuilder=this.checked;saveState();updatePreview();", '— hloubkove obohaceni vrstev po init') +
     `<label class="block text-sm font-medium text-zinc-700 mb-3 mt-5">Skills</label>` +
-    checkboxField('ai-readable-markdown', e.skills.aiMarkdown, "state.engineering.skills.aiMarkdown=this.checked;saveState();", '— styl normalizace') +
-    checkboxField('keep-a-changelog-standard', e.skills.keepChangelog, "state.engineering.skills.keepChangelog=this.checked;saveState();", '— CHANGELOG metodika') +
-    checkboxField('zvl_end-session', e.skills.endSession, "state.engineering.skills.endSession=this.checked;saveState();", '— session closure protocol') +
-    checkboxField('zvl_work-items', e.skills.workItems, "state.engineering.skills.workItems=this.checked;saveState();", '— sprava work items')
+    checkboxField('ai-readable-markdown', e.skills.aiMarkdown, "state.engineering.skills.aiMarkdown=this.checked;saveState();updatePreview();", '— styl normalizace') +
+    checkboxField('keep-a-changelog-standard', e.skills.keepChangelog, "state.engineering.skills.keepChangelog=this.checked;saveState();updatePreview();", '— CHANGELOG metodika') +
+    checkboxField('zvl_end-session', e.skills.endSession, "state.engineering.skills.endSession=this.checked;saveState();updatePreview();", '— session closure protocol') +
+    checkboxField('zvl_work-items', e.skills.workItems, "state.engineering.skills.workItems=this.checked;saveState();updatePreview();", '— index work items') +
+    checkboxField('zvl_new-meeting', e.skills.newMeeting, "state.engineering.skills.newMeeting=this.checked;saveState();updatePreview();", '— meeting note ze sablony') +
+    checkboxField('zvl_meeting-from-transcript', e.skills.meetingFromTranscript, "state.engineering.skills.meetingFromTranscript=this.checked;saveState();updatePreview();", '— extrakt bodu z transkriptu, propsani BR do BR-ALL.md') +
+    `<label class="block text-sm font-medium text-zinc-700 mb-3 mt-5">Hooks</label>` +
+    checkboxField('session-guard.ps1', h.sessionGuard, "state.engineering.hooks.sessionGuard=this.checked;saveState();updatePreview();", '— blokuje /clear bez ulozeni session')
   );
 
   return html;
@@ -685,11 +699,30 @@ function renderStep8() {
 
   html += card(
     `<label class="block text-sm font-medium text-zinc-700 mb-3">Sablony (21_TEMPLATES)</label>` +
-    checkboxField('business-request-template.md', d.templates.businessRequest, "state.delivery.templates.businessRequest=this.checked;saveState();updatePreview();") +
+    checkboxField('business-request-template.md', d.templates.businessRequest, "state.delivery.templates.businessRequest=this.checked;saveState();updatePreview();", '— v1, jednoduchy BR') +
+    checkboxField('business-request-v2-template.md', d.templates.businessRequestV2, "state.delivery.templates.businessRequestV2=this.checked;saveState();updatePreview();", '— v2 s NEW/ANALYSIS/IN_PROGRESS/CONTROL/DONE workflow') +
+    checkboxField('br-findings-template.md', d.templates.brFindings, "state.delivery.templates.brFindings=this.checked;saveState();updatePreview();", '— findings z BR control + auto-TASK generovani') +
+    checkboxField('br-all-template.md', d.templates.brAll, "state.delivery.templates.brAll=this.checked;saveState();updatePreview();", '— centralni BR registr (BR-ALL.md schema)') +
     checkboxField('change-request-template.md', d.templates.changeRequest, "state.delivery.templates.changeRequest=this.checked;saveState();updatePreview();") +
     checkboxField('meeting-note-template.md', d.templates.meetingNote, "state.delivery.templates.meetingNote=this.checked;saveState();updatePreview();") +
     checkboxField('meeting-screenshots-template.md', d.templates.meetingScreenshots, "state.delivery.templates.meetingScreenshots=this.checked;saveState();updatePreview();") +
+    checkboxField('meetings-overview-template.md', d.templates.meetingsOverview, "state.delivery.templates.meetingsOverview=this.checked;saveState();updatePreview();", '— PENDING/REVIEWED tabulka transkript-extraktu') +
     checkboxField('test-case-template.md', d.templates.testCase, "state.delivery.templates.testCase=this.checked;saveState();updatePreview();")
+  );
+
+  const s = d.standards || {};
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-3">Standardy (22_STANDARDS, navic k TAGS.md a README.md)</label>` +
+    checkboxField('DB_DESIGN_RULES.md', s.dbDesignRules, "state.delivery.standards.dbDesignRules=this.checked;saveState();updatePreview();", '— pravidla pro DB design (SAP/HANA)') +
+    checkboxField('GOLDEN_RULES_UI5.md', s.goldenRulesUi5, "state.delivery.standards.goldenRulesUi5=this.checked;saveState();updatePreview();", '— UI5 best practices')
+  );
+
+  const g = d.governance || {};
+  html += card(
+    `<label class="block text-sm font-medium text-zinc-700 mb-3">Cross-cutting governance soubory v rootu</label>` +
+    `<p class="text-xs text-zinc-400 mb-3">ID_REGISTRY, TOPIC_MAP, GLOSSARY, STALE jsou vzdy soucasti Standard+ presetu (Discovery layer).</p>` +
+    checkboxField('START_HERE.md', g.startHere, "state.delivery.governance.startHere=this.checked;saveState();updatePreview();", '— 5min onboarding') +
+    checkboxField('DIAGRAMS_INDEX.md', g.diagramsIndex, "state.delivery.governance.diagramsIndex=this.checked;saveState();updatePreview();", '— centralni inventar HTML/SVG diagramu')
   );
 
   return html;
@@ -784,14 +817,20 @@ function buildTree() {
   const agents = { name: 'agents', type: 'dir', children: [] };
   if (state.engineering.agents.changelog) agents.children.push({ name: 'changelog-manager', type: 'dir', children: [] });
   if (state.engineering.agents.mdPostprocessor) agents.children.push({ name: 'md-postprocessor', type: 'dir', children: [] });
+  if (state.engineering.agents.souhrnGpt) agents.children.push({ name: 'souhrn-gpt-updater', type: 'dir', children: [] });
+  if (state.engineering.agents.knowledgeBuilder) agents.children.push({ name: 'zvl_knowledge-builder', type: 'dir', children: [] });
   if (agents.children.length) claude.children.push(agents);
   const skills = { name: 'skills', type: 'dir', children: [] };
   if (state.engineering.skills.aiMarkdown) skills.children.push({ name: 'ai-readable-markdown', type: 'dir', children: [] });
   if (state.engineering.skills.keepChangelog) skills.children.push({ name: 'keep-a-changelog-standard', type: 'dir', children: [] });
   if (state.engineering.skills.endSession) skills.children.push({ name: 'zvl_end-session', type: 'dir', children: [] });
   if (state.engineering.skills.workItems) skills.children.push({ name: 'zvl_work-items', type: 'dir', children: [] });
+  if (state.engineering.skills.newMeeting) skills.children.push({ name: 'zvl_new-meeting', type: 'dir', children: [] });
+  if (state.engineering.skills.meetingFromTranscript) skills.children.push({ name: 'zvl_meeting-from-transcript', type: 'dir', children: [] });
   if (skills.children.length) claude.children.push(skills);
-  claude.children.push({ name: 'hooks', type: 'dir', children: [] });
+  const hooks = { name: 'hooks', type: 'dir', children: [] };
+  if (state.engineering.hooks && state.engineering.hooks.sessionGuard) hooks.children.push({ name: 'session-guard.ps1', type: 'file' });
+  claude.children.push(hooks);
   claude.children.push({ name: 'settings.json', type: 'file' });
   tree.children.push(claude);
 
@@ -840,9 +879,14 @@ function buildTree() {
   // 10_DELIVERY
   if (state.delivery.preset !== 'Minimal') {
     const delivery = { name: '10_DELIVERY', type: 'dir', children: [] };
-    if (del.meetings) delivery.children.push({ name: '11_MEETINGS', type: 'dir', children: [] });
+    if (del.meetings) delivery.children.push({ name: '11_MEETINGS', type: 'dir', children: [
+      { name: 'MEETINGS_OVERVIEW.md', type: 'file' },
+      { name: 'README.md', type: 'file' },
+    ]});
     if (del.workItems) delivery.children.push({ name: '12_WORK_ITEMS', type: 'dir', children: [
-      { name: '01_BUSINESS_REQUESTS', type: 'dir', children: [] },
+      { name: '01_BUSINESS_REQUESTS', type: 'dir', children: [
+        { name: 'BR-ALL.md', type: 'file' },
+      ]},
       { name: '02_FUNCTIONAL_SPECS', type: 'dir', children: [] },
       { name: '03_TECHNICAL_SPECS', type: 'dir', children: [] },
       { name: '04_DEV_TASKS', type: 'dir', children: [] },
@@ -873,15 +917,21 @@ function buildTree() {
     const tpls = [];
     const t = state.delivery.templates;
     if (t.businessRequest) tpls.push({ name: 'business-request-template.md', type: 'file' });
+    if (t.businessRequestV2) tpls.push({ name: 'business-request-v2-template.md', type: 'file' });
+    if (t.brFindings) tpls.push({ name: 'br-findings-template.md', type: 'file' });
+    if (t.brAll) tpls.push({ name: 'br-all-template.md', type: 'file' });
     if (t.changeRequest) tpls.push({ name: 'change-request-template.md', type: 'file' });
     if (t.meetingNote) tpls.push({ name: 'meeting-note-template.md', type: 'file' });
     if (t.meetingScreenshots) tpls.push({ name: 'meeting-screenshots-template.md', type: 'file' });
+    if (t.meetingsOverview) tpls.push({ name: 'meetings-overview-template.md', type: 'file' });
     if (t.testCase) tpls.push({ name: 'test-case-template.md', type: 'file' });
+    const stds = [{ name: 'TAGS.md', type: 'file' }, { name: 'README.md', type: 'file' }];
+    const s = state.delivery.standards || {};
+    if (s.dbDesignRules) stds.push({ name: 'DB_DESIGN_RULES.md', type: 'file' });
+    if (s.goldenRulesUi5) stds.push({ name: 'GOLDEN_RULES_UI5.md', type: 'file' });
     const sharedRefChildren = [
       { name: '21_TEMPLATES', type: 'dir', children: tpls },
-      { name: '22_STANDARDS', type: 'dir', children: [
-        { name: 'TAGS.md', type: 'file' },
-      ]},
+      { name: '22_STANDARDS', type: 'dir', children: stds },
       { name: '23_NAMING_CONVENTIONS', type: 'dir', children: [
         { name: 'README.md', type: 'file' },
       ]},
@@ -907,6 +957,9 @@ function buildTree() {
     tree.children.push({ name: 'TOPIC_MAP.md', type: 'file' });
     tree.children.push({ name: 'GLOSSARY.md', type: 'file' });
     tree.children.push({ name: 'STALE.md', type: 'file' });
+    const g = state.delivery.governance || {};
+    if (g.startHere) tree.children.push({ name: 'START_HERE.md', type: 'file' });
+    if (g.diagramsIndex) tree.children.push({ name: 'DIAGRAMS_INDEX.md', type: 'file' });
   }
 
   return tree;
@@ -1014,6 +1067,17 @@ Vytvor nasledujici slozky:
     dirs.push('20_SHARED_REFERENCE/22_STANDARDS');
     dirs.push('20_SHARED_REFERENCE/23_NAMING_CONVENTIONS');
   }
+  // Skill / agent / hook subdirs (each as its own folder under .claude/)
+  if (state.engineering.agents.changelog) dirs.push('.claude/agents/changelog-manager');
+  if (state.engineering.agents.mdPostprocessor) dirs.push('.claude/agents/md-postprocessor');
+  if (state.engineering.agents.souhrnGpt) dirs.push('.claude/agents/souhrn-gpt-updater');
+  if (state.engineering.agents.knowledgeBuilder) dirs.push('.claude/agents/zvl_knowledge-builder');
+  if (state.engineering.skills.aiMarkdown) dirs.push('.claude/skills/ai-readable-markdown');
+  if (state.engineering.skills.keepChangelog) dirs.push('.claude/skills/keep-a-changelog-standard');
+  if (state.engineering.skills.endSession) dirs.push('.claude/skills/zvl_end-session');
+  if (state.engineering.skills.workItems) dirs.push('.claude/skills/zvl_work-items');
+  if (state.engineering.skills.newMeeting) dirs.push('.claude/skills/zvl_new-meeting');
+  if (state.engineering.skills.meetingFromTranscript) dirs.push('.claude/skills/zvl_meeting-from-transcript');
   dirs.push('99_ARCHIVE');
 
   prompt += dirs.map(d => `- ${d}`).join('\n');
@@ -1583,6 +1647,17 @@ function generatePowerShell() {
     dirs.push('20_SHARED_REFERENCE\\22_STANDARDS');
     dirs.push('20_SHARED_REFERENCE\\23_NAMING_CONVENTIONS');
   }
+  // Per-skill / per-agent subdirs under .claude/
+  if (state.engineering.agents.changelog) dirs.push('.claude\\agents\\changelog-manager');
+  if (state.engineering.agents.mdPostprocessor) dirs.push('.claude\\agents\\md-postprocessor');
+  if (state.engineering.agents.souhrnGpt) dirs.push('.claude\\agents\\souhrn-gpt-updater');
+  if (state.engineering.agents.knowledgeBuilder) dirs.push('.claude\\agents\\zvl_knowledge-builder');
+  if (state.engineering.skills.aiMarkdown) dirs.push('.claude\\skills\\ai-readable-markdown');
+  if (state.engineering.skills.keepChangelog) dirs.push('.claude\\skills\\keep-a-changelog-standard');
+  if (state.engineering.skills.endSession) dirs.push('.claude\\skills\\zvl_end-session');
+  if (state.engineering.skills.workItems) dirs.push('.claude\\skills\\zvl_work-items');
+  if (state.engineering.skills.newMeeting) dirs.push('.claude\\skills\\zvl_new-meeting');
+  if (state.engineering.skills.meetingFromTranscript) dirs.push('.claude\\skills\\zvl_meeting-from-transcript');
 
   const dirsList = dirs.map(d => `    "${d}"`).join(',\n');
 
