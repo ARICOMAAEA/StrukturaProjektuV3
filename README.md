@@ -34,33 +34,33 @@ It is a single self-contained HTML file (dark theme, inline SVG, no build step).
 
 ## Generated structure
 
+> Every structural folder also gets a **folder-description `README.md`** (Účel / Co sem patří / Co sem nepatří / Kdo smí měnit) following the KOFOLA pattern — see `README.md` markers below.
+
 ```
 <ProjectName>/                          (Knowledge Layer)
-├── 00_PROJECT_CONTROL/
-│   ├── 01_BUSINESS/BUSINESS.md
-│   ├── 02_KNOWLEDGE/
-│   ├── 03_ARCHITECTURE/ADR/
-│   ├── 04_ENGINEERING/
-│   ├── 05_PLAN/PLAN.md
-│   ├── 06_DATA/DATA.md
+├── 00_PROJECT_CONTROL/README.md
+│   ├── 01_BUSINESS/BUSINESS.md + README.md
+│   ├── 02_KNOWLEDGE/README.md
+│   ├── 03_ARCHITECTURE/ADR/ + README.md
+│   ├── 04_ENGINEERING/README.md
+│   ├── 05_PLAN/PLAN.md + README.md
+│   ├── 06_DATA/DATA.md + README.md
 │   ├── 07_RESOURCE/prompty/
-│   │               RESOURCE.md
-│   └── 08_DEV/ExecutionLayer.lnk  -->  Execution Layer
-├── 10_DELIVERY/                        (Standard+)
-│   ├── 11_MEETINGS/
-│   ├── 12_WORK_ITEMS/01-05/
+│   │               RESOURCE.md + README.md
+│   └── 08_DEV/ExecutionLayer.lnk + README.md  -->  Execution Layer
+├── 10_DELIVERY/README.md               (Standard+)
+│   ├── 11_MEETINGS/README.md
+│   ├── 12_WORK_ITEMS/01-05/ + README.md
 │   ├── 13_MIGRATION/01-07/            (Full only)
 │   ├── 14_INTEGRATION/01-04/          (Full only)
 │   ├── 15_TESTING/01-06/              (Full only)
 │   ├── 16_RELEASE_TRANSPORT/          (Full only)
 │   └── 17_OPERATIONS/                 (Full only)
-├── 20_SHARED_REFERENCE/                (Standard+)
-│   ├── 21_TEMPLATES/
-│   ├── 22_STANDARDS/TAGS.md
+├── 20_SHARED_REFERENCE/README.md       (Standard+)
+│   ├── 21_TEMPLATES/README.md
+│   ├── 22_STANDARDS/TAGS.md + README.md
 │   └── 23_NAMING_CONVENTIONS/README.md
 ├── 99_ARCHIVE/
-├── CHANGELOG.md
-├── EXECUTION_SNAPSHOT.md
 ├── GLOSSARY.md                         (Standard+)
 ├── ID_REGISTRY.md                      (Standard+)
 ├── PROJECT_HISTORY.md
@@ -102,6 +102,7 @@ Also adds **Search protocol** and **Don't-read list** sections to CLAUDE.md.
 
 ## Recent updates
 
+- **2026-06-16** — Folder-description READMEs (v1.8.0): the wizard now generates a folder-description `README.md` (Účel / Co sem patří / Co sem nepatří / Kdo smí měnit) for **every structural folder** — `00_PROJECT_CONTROL` + layers `01_BUSINESS`–`08_DEV`, `10_DELIVERY` + `11_MEETINGS`/`12_WORK_ITEMS`, `20_SHARED_REFERENCE` + `21_TEMPLATES`/`22_STANDARDS`. Mirrors the KOFOLA Časová okna pattern. Implemented in all three outputs: PowerShell init script (`Write-FolderReadme` helper + content), Claude Code prompt (folder-description directive + template), and tree preview. Generated READMEs carry the mandatory YAML origin header.
 - **2026-05-03** — Wizard A-patch (v1.7.0): `struktura-wizard.html` now generates everything back-ported in v1.6.x. New checkboxes in Step 4 (Engineering: `zvl_knowledge-builder`, `zvl_new-meeting`, `zvl_meeting-from-transcript`, `session-guard.ps1`) and Step 8 (Delivery: 4 new templates, 2 SAP standards, 2 governance META files). Tree preview + Claude Code prompt + PowerShell init script all updated. Wizard grew 111 KB → 118 KB.
 - **2026-05-03** — Generalization pass (v1.6.2): rewrote 11 root governance META files (`README.md`, `START_HERE.md`, `STALE.md`, `souhrnGPT.md`, `TOPIC_MAP.md`, `ID_REGISTRY.md`, `DIAGRAMS_INDEX.md`, `GLOSSARY.md`, `ContextQuick.md`, plus the two sub-folder ContextQuicks) into project-agnostic schemas with `{{PLACEHOLDER}}` slots. KOFOLA-content quarantine (`_NEEDS_GENERALIZATION_FROM_KOFOLA/`) deleted. Knowledge layer is now fully template-clean — zero customer references in any of the 15 root .md files.
 - **2026-05-03** — Logic-only back-port from WIKOV (v1.6.1): added skill `zvl_meeting-from-transcript`, templates `meetings-overview-template.md` + `br-all-template.md`, and layer schema `10_DELIVERY/11_MEETINGS/README.md`. The skill propagates `(BR)`-flagged points from meeting transcripts into `BR-ALL.md` and keeps `MEETINGS_OVERVIEW.md` in sync (`PENDING/REVIEWED` workflow). Wizard checkboxes still pending.

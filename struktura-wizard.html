@@ -176,8 +176,8 @@ const defaultState = {
   engineering: {
     codingStandards: '',
     tools: [''],
-    agents: { changelog: true, mdPostprocessor: false, souhrnGpt: true, knowledgeBuilder: false },
-    skills: { aiMarkdown: true, keepChangelog: true, endSession: true, workItems: true, newMeeting: true, meetingFromTranscript: false },
+    agents: { changelog: false, mdPostprocessor: false, souhrnGpt: true, knowledgeBuilder: false },
+    skills: { aiMarkdown: true, keepChangelog: false, endSession: true, workItems: true, newMeeting: true, meetingFromTranscript: false },
     hooks: { sessionGuard: true },
   },
   plan: {
@@ -487,7 +487,7 @@ function renderStep2() {
   let html = sectionHeader('02 KNOWLEDGE — CO (What)', 'Co system je, jak funguje governance.');
 
   html += card(
-    inputField('Governance overrides', k.governanceOverrides, "state.knowledge.governanceOverrides=this.value;saveState();", { textarea: true, placeholder: 'Zmeny oproti vychozim pravidlum. Nechte prazdne pro vychozi.', helpText: 'Vychozi: top-down dependency, ADR append-only, EXECUTION_SNAPSHOT facts only.' }) +
+    inputField('Governance overrides', k.governanceOverrides, "state.knowledge.governanceOverrides=this.value;saveState();", { textarea: true, placeholder: 'Zmeny oproti vychozim pravidlum. Nechte prazdne pro vychozi.', helpText: 'Vychozi: top-down dependency, ADR append-only.' }) +
     repeatableField('Custom rules', k.customRules, 'state.knowledge.customRules', 'Dalsi pravidla specificka pro tento projekt.')
   );
 
@@ -529,13 +529,13 @@ function renderStep4() {
   const h = e.hooks || { sessionGuard: true };
   html += card(
     `<label class="block text-sm font-medium text-zinc-700 mb-3">Agents</label>` +
-    checkboxField('changelog-manager', e.agents.changelog, "state.engineering.agents.changelog=this.checked;saveState();updatePreview();", '— automaticky aktualizuje CHANGELOG.md') +
+    checkboxField('changelog-manager', e.agents.changelog, "state.engineering.agents.changelog=this.checked;saveState();updatePreview();", '— [DEPRECATED 2026-06-03] CHANGELOG.md se z template uz negeneruje') +
     checkboxField('md-postprocessor', e.agents.mdPostprocessor, "state.engineering.agents.mdPostprocessor=this.checked;saveState();updatePreview();", '— normalizace Markdown') +
     checkboxField('souhrn-gpt-updater', e.agents.souhrnGpt, "state.engineering.agents.souhrnGpt=this.checked;saveState();updatePreview();", '— generuje souhrnGPT.md') +
     checkboxField('zvl_knowledge-builder', e.agents.knowledgeBuilder, "state.engineering.agents.knowledgeBuilder=this.checked;saveState();updatePreview();", '— hloubkove obohaceni vrstev po init') +
     `<label class="block text-sm font-medium text-zinc-700 mb-3 mt-5">Skills</label>` +
     checkboxField('ai-readable-markdown', e.skills.aiMarkdown, "state.engineering.skills.aiMarkdown=this.checked;saveState();updatePreview();", '— styl normalizace') +
-    checkboxField('keep-a-changelog-standard', e.skills.keepChangelog, "state.engineering.skills.keepChangelog=this.checked;saveState();updatePreview();", '— CHANGELOG metodika') +
+    checkboxField('keep-a-changelog-standard', e.skills.keepChangelog, "state.engineering.skills.keepChangelog=this.checked;saveState();updatePreview();", '— [DEPRECATED 2026-06-03] CHANGELOG.md se z template uz negeneruje') +
     checkboxField('zvl_end-session', e.skills.endSession, "state.engineering.skills.endSession=this.checked;saveState();updatePreview();", '— session closure protocol') +
     checkboxField('zvl_work-items', e.skills.workItems, "state.engineering.skills.workItems=this.checked;saveState();updatePreview();", '— index work items') +
     checkboxField('zvl_new-meeting', e.skills.newMeeting, "state.engineering.skills.newMeeting=this.checked;saveState();updatePreview();", '— meeting note ze sablony') +
@@ -891,6 +891,7 @@ function buildTree() {
       { name: '03_TECHNICAL_SPECS', type: 'dir', children: [] },
       { name: '04_DEV_TASKS', type: 'dir', children: [] },
       { name: '05_CHANGE_REQUESTS', type: 'dir', children: [] },
+      { name: 'README.md', type: 'file' },
     ]});
     if (del.migration) delivery.children.push({ name: '13_MIGRATION', type: 'dir', children: [
       { name: '01_SCOPE', type: 'dir', children: [] }, { name: '02_OBJECTS', type: 'dir', children: [] },
@@ -912,7 +913,10 @@ function buildTree() {
       { name: '01_AUTH', type: 'dir', children: [] }, { name: '02_MONITORING', type: 'dir', children: [] },
       { name: '03_SUPPORT', type: 'dir', children: [] }, { name: '04_MANUALS', type: 'dir', children: [] },
     ]});
-    if (delivery.children.length) tree.children.push(delivery);
+    if (delivery.children.length) {
+      delivery.children.push({ name: 'README.md', type: 'file' });
+      tree.children.push(delivery);
+    }
   }
 
   // 20_SHARED_REFERENCE
@@ -928,6 +932,7 @@ function buildTree() {
     if (t.meetingScreenshots) tpls.push({ name: 'meeting-screenshots-template.md', type: 'file' });
     if (t.meetingsOverview) tpls.push({ name: 'meetings-overview-template.md', type: 'file' });
     if (t.testCase) tpls.push({ name: 'test-case-template.md', type: 'file' });
+    tpls.push({ name: 'README.md', type: 'file' });
     const stds = [{ name: 'TAGS.md', type: 'file' }, { name: 'README.md', type: 'file' }];
     const s = state.delivery.standards || {};
     if (s.dbDesignRules) stds.push({ name: 'DB_DESIGN_RULES.md', type: 'file' });
@@ -938,6 +943,7 @@ function buildTree() {
       { name: '23_NAMING_CONVENTIONS', type: 'dir', children: [
         { name: 'README.md', type: 'file' },
       ]},
+      { name: 'README.md', type: 'file' },
     ];
     tree.children.push({ name: '20_SHARED_REFERENCE', type: 'dir', children: sharedRefChildren });
   }
@@ -949,8 +955,6 @@ function buildTree() {
   tree.children.push({ name: 'README.md', type: 'file' });
   tree.children.push({ name: 'ContextQuick.md', type: 'file' });
   tree.children.push({ name: 'CLAUDE.md', type: 'file' });
-  tree.children.push({ name: 'CHANGELOG.md', type: 'file' });
-  tree.children.push({ name: 'EXECUTION_SNAPSHOT.md', type: 'file' });
   tree.children.push({ name: 'PROJECT_STATUS.md', type: 'file' });
   tree.children.push({ name: 'PROJECT_HISTORY.md', type: 'file' });
   tree.children.push({ name: 'Todo.md', type: 'file' });
@@ -1102,8 +1106,7 @@ ${b.vision || '_Vision nebyla definovana._'}
 
 1. Precti \`PROJECT_STATUS.md\` — rychly prehled co se deje
 2. Precti \`ContextQuick.md\` — navigacni mapa projektu
-3. Precti \`EXECUTION_SNAPSHOT.md\` — stav execution layer
-4. Podrobnosti v \`00_PROJECT_CONTROL/\` podle potreby
+3. Podrobnosti v \`00_PROJECT_CONTROL/\` podle potreby
 
 ## Soubory v koreni projektu
 
@@ -1111,8 +1114,6 @@ ${b.vision || '_Vision nebyla definovana._'}
 |---|---|---|
 | \`CLAUDE.md\` | Instrukce pro Claude Code — session protokol, governance, pravidla | Uzivatel |
 | \`ContextQuick.md\` | Navigacni mapa projektu — strukturalni prehled + quick lookup | Claude pri strukturalni zmene |
-| \`CHANGELOG.md\` | Historie strukturalnich zmen projektu (SemVer, Keep a Changelog) | Claude / changelog agent |
-| \`EXECUTION_SNAPSHOT.md\` | Stav execution layer — fakta, ne plan. Most mezi knowledge a execution | Claude na konci session |
 | \`PROJECT_STATUS.md\` | Rychly prehled aktualniho deni pro onboarding cloveka i Claude | Claude navrh + uzivatel schvaleni |
 | \`PROJECT_HISTORY.md\` | Chronologicky zaznam vsech sessions (nejnovejsi nahore) | Skill zvl_end-session |
 | \`souhrnGPT.md\` | Automaticky generovany souhrn pro externi GPT nastroje | Agent souhrn-gpt-updater |
@@ -1206,10 +1207,8 @@ ${state.delivery.preset !== 'Minimal' ? `| \`ID_REGISTRY.md\` | Lookup table pro
 |---|---|---|
 | \`CLAUDE.md\` | Governance, session protocol, opravneni | ANO (auto-load) |
 | \`ContextQuick.md\` | Navigacni mapa (tento soubor) | ANO (session start) |
-| \`EXECUTION_SNAPSHOT.md\` | Stav execution layer | ANO (session start) |
 | \`PROJECT_STATUS.md\` | Posledni session, aktualni prace | ANO (session start) |
 | \`PROJECT_HISTORY.md\` | Chronologie vsech sessions | NE (lazy, on demand) |
-| \`CHANGELOG.md\` | Strukturalni zmeny (SemVer) | NE (lazy, on demand) |
 | \`Todo.md\` | Seznam ukolu | NE (lazy, on demand) |
 | \`souhrnGPT.md\` | Souhrn pro externi GPT nastroje | ZAKAZANO pro Claude |
 | \`ID_REGISTRY.md\` | Lookup table vsech projektovych ID | NE (lazy, on demand) |
@@ -1266,53 +1265,6 @@ ${bulletList(state.plan.milestones, '_Zatim nejsou definovany._')}
 ## Rizika
 
 ${state.plan.risks.filter(r => r.risk).length ? '| Riziko | P | D | Mitigace |\n|--------|---|---|----------|\n' + state.plan.risks.filter(r => r.risk).map(r => `| ${r.risk} | ${r.probability} | ${r.impact} | ${r.mitigation} |`).join('\n') : '_Zatim nejsou identifikovana._'}
-\`\`\`
-
-#### CHANGELOG.md
-\`\`\`markdown
-# CHANGELOG
-
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [SemVer](https://semver.org/)
-
-## [Unreleased]
-
-## [0.1.0] - ${today}
-
-### Added
-- Inicializace struktury projektu ${pid}
-- Semanticke vrstvy v 00_PROJECT_CONTROL (01-07)
-- Delivery vrstva (10_DELIVERY)
-- Shared reference (20_SHARED_REFERENCE)
-\`\`\`
-
-#### EXECUTION_SNAPSHOT.md
-\`\`\`markdown
-# EXECUTION_SNAPSHOT
-
-> Most mezi KNOWLEDGE a execution layer. Pouze fakta.
-
-## Metadata
-
-- **Datum**: ${today}
-- **Verze**: 0.1.0
-- **Rezim**: ${m.mode}
-
-## Execution Layer
-
-- **Koren**: \`${eRoot}\`
-- **CONTEXT junction**: aktivni -> knowledge layer
-
-### Aplikace
-
-_Zadne aplikace zatim._
-
-## Aktivni prace
-
-_Zadna._
-
-## Blokery
-
-_Zadne._
 \`\`\`
 
 #### PROJECT_STATUS.md
@@ -1585,6 +1537,38 @@ Tyto soubory **nikdy necti automaticky**. Cti pouze pokud uzivatel explicitne po
   }
 
   prompt += `
+
+#### Folder-description README.md (kazda strukturalni slozka)
+Pro KAZDOU strukturalni slozku vytvor README.md typu folder-description: 00_PROJECT_CONTROL a jeji vrstvy 01_BUSINESS az 08_DEV, dale 10_DELIVERY a jeji podslozky (11_MEETINGS, 12_WORK_ITEMS) a 20_SHARED_REFERENCE a jeji podslozky (21_TEMPLATES, 22_STANDARDS). Pouzij tento format:
+
+\`\`\`markdown
+---
+created: ${today}
+author: ${m.fullName || pid}
+origin_type: template
+origin_source: Meta Framework V3 init
+purpose: Popis ucelu slozky <NAZEV>
+tags: [folder-description, readme]
+status: active
+---
+
+# <NAZEV vrstvy/slozky>
+
+## Ucel
+<jednou vetou cemu slozka slouzi>
+
+## Co sem patri
+- ...
+
+## Co sem nepatri
+- ... (odkaz na spravnou cilovou slozku)
+
+## Kdo smi menit
+<pravidlo zmeny>
+\`\`\`
+
+Vyznam vrstev pro obsah README: 01_BUSINESS = PROC (Why); 02_KNOWLEDGE = CO (What); 03_ARCHITECTURE = JAK (How), ADR append-only; 04_ENGINEERING = CIM (With what); 05_PLAN = KDY (When); 06_DATA = Fakta (fakt vs. interpretace); 07_RESOURCE = externi vstupy (nejsou zavazna pravidla); 08_DEV = most do execution layer (zadny spustitelny kod). 10_DELIVERY = operativni dorucovaci vrstva (caste zmeny). 20_SHARED_REFERENCE = sablony / standardy / naming konvence.
+
 ## Execution Layer: ${eRoot}
 
 ### Adresarova struktura
@@ -1686,6 +1670,13 @@ function Write-Step  { param([string]$msg) Write-Host "\\n  ==> $msg" -Foregroun
 function Write-Ok    { param([string]$msg) Write-Host "    [OK] $msg" -ForegroundColor Green }
 function Write-Warn  { param([string]$msg) Write-Host "    [!]  $msg" -ForegroundColor Yellow }
 function Write-Fail  { param([string]$msg) Write-Host "    [ERR] $msg" -ForegroundColor Red }
+function Write-FolderReadme {
+    param([string]$rel, [string]$content)
+    $dir = Join-Path $knowledgeRoot $rel
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $dir "README.md"), $content, [System.Text.Encoding]::UTF8)
+    Write-Ok "$rel/README.md"
+}
 
 try {
 
@@ -1807,57 +1798,6 @@ _Zatim neaplikovano._
 [System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\07_RESOURCE\\RESOURCE.md"), $resourceContent, [System.Text.Encoding]::UTF8)
 Write-Ok "RESOURCE.md"
 
-# CHANGELOG.md
-$changelogContent = @"
-# CHANGELOG
-
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [SemVer](https://semver.org/)
-
-## [Unreleased]
-
-## [0.1.0] - ${today}
-
-### Added
-- Inicializace struktury projektu ${pid}
-- Semanticke vrstvy v 00_PROJECT_CONTROL (01-07)
-- Delivery vrstva (10_DELIVERY)
-- Shared reference (20_SHARED_REFERENCE)
-"@
-[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "CHANGELOG.md"), $changelogContent, [System.Text.Encoding]::UTF8)
-Write-Ok "CHANGELOG.md"
-
-# EXECUTION_SNAPSHOT.md
-$snapshotContent = @"
-# EXECUTION_SNAPSHOT
-
-> Most mezi KNOWLEDGE a execution layer. Pouze fakta.
-
-## Metadata
-
-- **Datum**: ${today}
-- **Verze**: 0.1.0
-- **Rezim**: ${m.mode}
-
-## Execution Layer
-
-- **Koren**: \`\`$executionRoot\`\`
-- **CONTEXT junction**: aktivni -> knowledge layer
-
-### Aplikace
-
-_Zadne aplikace zatim._
-
-## Aktivni prace
-
-_Zadna._
-
-## Blokery
-
-_Zadne._
-"@
-[System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "EXECUTION_SNAPSHOT.md"), $snapshotContent, [System.Text.Encoding]::UTF8)
-Write-Ok "EXECUTION_SNAPSHOT.md"
-
 # PROJECT_STATUS.md
 $statusContent = @"
 # PROJECT_STATUS
@@ -1914,6 +1854,34 @@ Write-Ok "souhrnGPT.md"
 [System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "PROJECT_HISTORY.md"), "# PROJECT_HISTORY\n\n> Append-only session archiv. Nejnovejsi nahore.\n\n---\n\n## Session 1 — ${today}\n\n- **Tema**: Inicializace projektu\n- **Autor**: System\n- **Dokonceno**: Zalozeni projektove struktury Meta Framework V3\n", [System.Text.Encoding]::UTF8)
 Write-Ok "PROJECT_HISTORY.md"
 `;
+
+  // ── Folder-description README.md pro kazdou strukturalni slozku (KOFOLA pattern) ──
+  // Kazda slozka dostane README typu folder-description: Ucel / Co sem patri / Co sem nepatri / Kdo smi menit.
+  const frHdr = (purpose) => `---\ncreated: ${today}\nauthor: Meta Framework V3\norigin_type: template\norigin_source: struktura-wizard (Meta Framework V3 init)\npurpose: ${purpose}\ntags: [folder-description, readme]\nstatus: active\n---\n\n`;
+  const fr = (rel, purpose, body) => `\nWrite-FolderReadme "${rel}" @"\n${frHdr(purpose)}${body}\n"@\n`;
+
+  // Core layers — vzdy (i Minimal preset)
+  const coreReadmes = [
+    { rel: '00_PROJECT_CONTROL', purpose: 'Popis ridici a koncepcni vrstvy projektu',
+      body: '# README -- slozka 00_PROJECT_CONTROL\n\n## Ucel\n\nRidici a koncepcni vrstva projektu. Stabilni informace definujici smer projektu: business kontext, architektura, technicke standardy a plan. Neobsahuje operativni obsah kazdodenni prace (ten patri do 10_DELIVERY).\n\n## Vrstvy\n\n| Vrstva | Otazka | Primarni soubor |\n|---|---|---|\n| 01_BUSINESS | PROC (Why) | BUSINESS.md |\n| 02_KNOWLEDGE | CO (What) | KNOWLEDGE.md |\n| 03_ARCHITECTURE | JAK (How) | ARCHITECTURE.md |\n| 04_ENGINEERING | CIM (With what) | ENGINEERING.md |\n| 05_PLAN | KDY (When) | PLAN.md |\n| 06_DATA | Fakta | DATA.md |\n| 07_RESOURCE | Vstupy | RESOURCE.md |\n| 08_DEV | Most na execution layer | ExecutionLayer.lnk |\n\n## Pravidlo aktualizace\n\nSlozka neni urcena pro caste zmeny. Update jen pri zmene projektoveho ramce (scope, architektonicke rozhodnuti, governance pravidlo).' },
+    { rel: '00_PROJECT_CONTROL/01_BUSINESS', purpose: 'Popis BUSINESS vrstvy (PROC)',
+      body: '# BUSINESS\n\n## Ucel\n\nBUSINESS vrstva odpovida na otazku PROC. Odděluje smysl projektu od techniky a architektury.\n\n## Co sem patri\n\n- Vision -- proc projekt existuje\n- Value -- jakou hodnotu vytvari a pro koho\n- Scope -- co je a co neni soucasti projektu\n- Constraints -- business omezeni (cas, zdroje, regulace)\n\n## Co sem nepatri\n\n- Technicka rozhodnuti -> ARCHITECTURE\n- Implementacni pravidla -> ENGINEERING\n- Casove plany -> PLAN\n- Data a mereni -> DATA\n\n## Kdo smi menit\n\nPri zmene smeru projektu. Kazda zasadni zmena (vision, scope) se zaznamenava v PROJECT_HISTORY.md.' },
+    { rel: '00_PROJECT_CONTROL/02_KNOWLEDGE', purpose: 'Popis KNOWLEDGE vrstvy (CO)',
+      body: '# KNOWLEDGE\n\n## Ucel\n\nKNOWLEDGE je "ustava projektu". Definuje system jako celek -- jeho smysl, strukturu, pravidla rizeni a kontrakt s execution layer.\n\n## Co sem patri\n\n- Definice semantickeho modelu (vrstvy a jejich vztahy)\n- Rezimy projektu (Teoreticky / Analyticky / Implementacni)\n- Governance pravidla -- kdo a jak smi menit strukturu\n\n## Co sem nepatri\n\n- Plany a milniky -> PLAN\n- Technicka rozhodnuti -> ARCHITECTURE, ENGINEERING\n- Business smysl -> BUSINESS\n- Data a reporty -> DATA\n\n## Kdo smi menit\n\nZmena KNOWLEDGE = zmena "ustavy", vyzaduje vedome rozhodnuti a zaznam v PROJECT_HISTORY.md.' },
+    { rel: '00_PROJECT_CONTROL/03_ARCHITECTURE', purpose: 'Popis ARCHITECTURE vrstvy (JAK)',
+      body: '# ARCHITECTURE\n\n## Ucel\n\nARCHITECTURE vrstva odpovida na otazku JAK (koncepcne). Odděluje strukturalni navrh od implementace a ridi, co smi na co navazovat.\n\n## Co sem patri\n\n- Structural Layers a Boundary Rules\n- Dependency Model -- co smi na co navazovat\n- ADR (Architectural Decision Records) -- append-only (slozka ADR/)\n\n## Co sem nepatri\n\n- Implementacni kod a nastroje -> ENGINEERING\n- Casove plany -> PLAN\n- Data a vystupy -> DATA\n\n## Kdo smi menit\n\nARCHITECTURE.md pri zmene navrhu (zaznam v PROJECT_HISTORY.md). ADR/ jen pridavanim novych, nikdy prepisem.' },
+    { rel: '00_PROJECT_CONTROL/04_ENGINEERING', purpose: 'Popis ENGINEERING vrstvy (CIM)',
+      body: '# ENGINEERING\n\n## Ucel\n\nENGINEERING vrstva odpovida na otazku CIM. Ridi zpusob realizace -- nastroje, patterns, coding rules a odpovednosti agentu.\n\n## Co sem patri\n\n- Coding Rules -- normativni pravidla vyvoje\n- Pattern Library a Anti-patterns\n- Tooling -- nastroje a jejich konfigurace\n- Agent Responsibilities\n\n## Co sem nepatri\n\n- Architektonicky navrh -> ARCHITECTURE\n- Casove plany -> PLAN\n- Business smysl -> BUSINESS\n\n## Kdo smi menit\n\nZmena pravidel vyzaduje vedome rozhodnuti. Pravidla se ridi ARCHITECTURE -- nesmi je obejit.' },
+    { rel: '00_PROJECT_CONTROL/05_PLAN', purpose: 'Popis PLAN vrstvy (KDY)',
+      body: '# PLAN\n\n## Ucel\n\nPLAN vrstva odpovida na otazku KDY. Dava projektu smer -- faze, milniky, kroky.\n\n## Co sem patri\n\n- Current Phase -- aktualni stav\n- Phases -- faze s milniky\n- Risks -- identifikovana rizika\n\n## Co sem nepatri\n\n- Technicke detaily -> ENGINEERING\n- Architektonicka rozhodnuti -> ARCHITECTURE\n- Konkretni execution tasky -> execution layer\n\n## Kdo smi menit\n\nZivy dokument, aktualizuje se prubezne. Zasadni zmena planu (reset, nova faze) se zaznamenava.' },
+    { rel: '00_PROJECT_CONTROL/06_DATA', purpose: 'Popis DATA vrstvy (Fakta)',
+      body: '# DATA\n\n## Ucel\n\nDATA vrstva uchovava fakta -- exporty, analyzy, merene hodnoty a logy. Odděluje realitu od interpretace.\n\n## Co sem patri\n\n- Exporty z nastroju a systemu\n- Vystupy analyz, dependency reporty, metriky\n\n## Co sem nepatri\n\n- Interpretace dat -> KNOWLEDGE / ARCHITECTURE\n- Rozhodnuti z dat -> ARCHITECTURE (ADR)\n- Business zavery -> BUSINESS\n\n## Klicove pravidlo\n\nFakt vs. interpretace: "Soubor ma 500 radku" je fakt; "je prilis velky" je interpretace a do DATA nepatri.\n\n## Kdo smi menit\n\nData se vkladaji prubezne; existujici se nemazou, ale archivuji nebo oznacuji jako superseded.' },
+    { rel: '00_PROJECT_CONTROL/07_RESOURCE', purpose: 'Popis RESOURCE vrstvy (Vstupy)',
+      body: '# RESOURCE\n\n## Ucel\n\nRESOURCE vrstva uchovava externi vstupy -- normy, dokumentaci, reference, best practices, sablony a podklady. Odděluje nase KNOWLEDGE od cizich zdroju.\n\n## Co sem patri\n\n- Externi standardy a dokumentace nastroju\n- Promptove podklady (slozka prompty/)\n- Odkazy na inspiraci a best practices\n\n## Co sem nepatri\n\n- Nase rozhodnuti -> ARCHITECTURE (ADR)\n- Nase pravidla -> ENGINEERING\n- Interni definice -> KNOWLEDGE\n\n## Klicove pravidlo\n\nRESOURCE nejsou zavazna pravidla. Zavaznymi se stavaji teprve prijetim do ENGINEERING nebo ARCHITECTURE.' },
+    { rel: '00_PROJECT_CONTROL/08_DEV', purpose: 'Popis DEV slozky -- most do execution layer',
+      body: '# 08_DEV -- Most do execution layer\n\n## Ucel\n\nSlozka 08_DEV je bridge mezi knowledge layer (OneDrive) a execution layer (C:\\DEV\\...). Neobsahuje spustitelny kod -- jen odkaz na execution layer.\n\n## Co sem patri\n\n- ExecutionLayer.lnk -- zkratka na execution root\n\n## Co sem nepatri\n\n- Zadny spustitelny artefakt (skripty, app, HTML, binarky) -- ty patri vyhradne do execution layer\n\n## Klicove pravidlo\n\n"Is this runnable?" -> pokud ano, patri do execution layer, ne sem.' },
+  ];
+  coreReadmes.forEach(r => { script += fr(r.rel, r.purpose, r.body); });
 
   // Discovery layer files (non-Minimal only) — PowerShell
   if (state.delivery.preset !== 'Minimal') {
@@ -2098,30 +2066,30 @@ $namingContent = @"
 
 ## Work Items
 
-- Business Requests: ``BR-NNN_<kebab-case-titulek>.md``
-- Sprint Items: ``SP-NNNN_<kebab-case-titulek>.md``
-- Functional Specs: ``FS-NNN_<kebab-case-titulek>.md``
-- Technical Specs: ``TS-NNN_<kebab-case-titulek>.md``
-- Dev Tasks: ``DEV-NNN_<kebab-case-titulek>.md``
-- Change Requests: ``CR-NNN_<kebab-case-titulek>.md``
+- Business Requests: \`\`BR-NNN_<kebab-case-titulek>.md\`\`
+- Sprint Items: \`\`SP-NNNN_<kebab-case-titulek>.md\`\`
+- Functional Specs: \`\`FS-NNN_<kebab-case-titulek>.md\`\`
+- Technical Specs: \`\`TS-NNN_<kebab-case-titulek>.md\`\`
+- Dev Tasks: \`\`DEV-NNN_<kebab-case-titulek>.md\`\`
+- Change Requests: \`\`CR-NNN_<kebab-case-titulek>.md\`\`
 
 ## Test Cases
 
-- ``TC-NNN_<feature-slug>.md``
+- \`\`TC-NNN_<feature-slug>.md\`\`
 
 ## Meetings
 
-- Slozka: ``YYYY-MM-DD_<typ>[-<varianta>]/``
+- Slozka: \`\`YYYY-MM-DD_<typ>[-<varianta>]/\`\`
 - Typy: workshop, interni, skoleni, integracni-test, review
-- Uvnitr: ``meeting-note.md``, pripadne ``transcript/``, ``screens/``
+- Uvnitr: \`\`meeting-note.md\`\`, pripadne \`\`transcript/\`\`, \`\`screens/\`\`
 
 ## ADR (Architectural Decision Records)
 
-- ``NNN-<kebab-case-nazev>.md``
+- \`\`NNN-<kebab-case-nazev>.md\`\`
 
 ## Integrace
 
-- ``<PREFIX>_<tema>.md`` (napr. INT_api-sync.md)
+- \`\`<PREFIX>_<tema>.md\`\` (napr. INT_api-sync.md)
 
 ## Obecna pravidla
 
@@ -2132,6 +2100,22 @@ $namingContent = @"
 [System.IO.File]::WriteAllText((Join-Path $knowledgeRoot "20_SHARED_REFERENCE\\23_NAMING_CONVENTIONS\\README.md"), $namingContent, [System.Text.Encoding]::UTF8)
 Write-Ok "NAMING_CONVENTIONS/README.md"
 `;
+
+    // Folder-description README.md pro delivery a shared-reference slozky
+    script += fr('20_SHARED_REFERENCE', 'Popis sdilene referencni vrstvy projektu',
+      '# README -- slozka 20_SHARED_REFERENCE\n\n## Ucel\n\nSdilene referencni a normativni materialy projektu -- sablony, standardy a naming konvence pouzivane napric celym projektem.\n\n## Struktura\n\n| Slozka | Obsah |\n|---|---|\n| 21_TEMPLATES | Sablony pro vytvareni novych dokumentu |\n| 22_STANDARDS | Zavazne projektove standardy |\n| 23_NAMING_CONVENTIONS | Konvence pojmenovani souboru a slozek |\n\n## Pravidlo aktualizace\n\nStandardy se zakladaji vzdy pres BR -- ne ad-hoc. Sablony lze doplnovat dle potreby.');
+    script += fr('20_SHARED_REFERENCE/21_TEMPLATES', 'Popis slozky se sablonami dokumentu',
+      '# 21_TEMPLATES -- Sablony dokumentu\n\n## Ucel\n\nSablony pouzivane pri vytvareni novych dokumentu projektu. Zajistuji konzistentni strukturu napric work items i dalsimi artefakty.\n\n## Co sem patri\n\n- Sablony work items (BR / FS / TS / DEV / CR template)\n- Findings template, meeting-note template\n\n## Co sem nepatri\n\n- Vyplnene konkretni dokumenty -> 10_DELIVERY\n- Zavazne standardy -> 22_STANDARDS\n\n## Konvence\n\nKazda sablona konci -template.md a obsahuje povinny YAML origin header, aby ho odvozene soubory zdedily.');
+    script += fr('20_SHARED_REFERENCE/22_STANDARDS', 'Index a popis projektovych standardu',
+      '# 22_STANDARDS -- Projektove standardy\n\n> Slozka pro normativni dokumenty projektu. Kazdy soubor zde je zavazny standard pro vyvojare a AI (Claude).\n\n## Hierarchie standardu (priorita pri konfliktu)\n\n1. Globalni ~/.claude/CLAUDE.md -- NON-NEGOTIABLE rules\n2. 00_PROJECT_CONTROL/04_ENGINEERING/ENGINEERING.md -- project governance\n3. Standardy v teto slozce\n4. Skills -- implementacni patterns\n5. Ostatni docs\n\n## Pravidla pro pridani noveho standardu\n\n1. Standard se zaklada vzdy pres BR -- ne ad-hoc\n2. Soubor MUSI mit YAML frontmatter dle globalniho CLAUDE.md\n3. Tagy ve frontmatteru MUSI byt registrovany v TAGS.md\n4. Po vytvoreni aktualizovat tento README a ID_REGISTRY.md');
+    if (del.meetings) script += fr('10_DELIVERY/11_MEETINGS', 'Popis slozky se zapisy ze schuzek',
+      '# 11_MEETINGS -- Zapisy ze schuzek\n\n## Ucel\n\nVsechny zapisy ze schuzek projektu. Kazda schuzka ma vlastni slozku YYYY-MM-DD_<typ>, uvnitr primarni zapis a pripadne podklady.\n\n## Co sem patri\n\n- Primarni zapisy (meeting-note.md)\n- Transkripty a screenshoty navazane na schuzku\n\n## Co sem nepatri\n\n- Business Requests a work items -> 12_WORK_ITEMS\n- Trvale standardy a rozhodnuti -> 00_PROJECT_CONTROL\n\n## Konvence\n\nTypy: workshop, interni, skoleni, integracni-test, review. Body oznacene (BR) se propisuji do BR-ALL.md.');
+    if (del.workItems) script += fr('10_DELIVERY/12_WORK_ITEMS', 'Popis backlogu pracovnich polozek',
+      '# 12_WORK_ITEMS -- Backlog pracovnich polozek\n\n## Ucel\n\nVsechny pracovni polozky projektu organizovane podle typu -- workflow od business pozadavku po realizaci.\n\n## Struktura\n\n| Slozka | Typ |\n|---|---|\n| 01_BUSINESS_REQUESTS | BR -- cisty textovy business vstup |\n| 02_FUNCTIONAL_SPECS | FS -- funkcni specifikace |\n| 03_TECHNICAL_SPECS | TS -- technicka specifikace, nese TASKy |\n| 04_DEV_TASKS | DEV -- dev artefakty / evidence |\n| 05_CHANGE_REQUESTS | CR -- zmenove pozadavky |\n\n## Workflow\n\nBR (vstup) -> FS (brainstorming) -> TS (writing-plans, TASKy ziji v TS) -> exekuce.\n\n## Konvence\n\nNaming dle 20_SHARED_REFERENCE/23_NAMING_CONVENTIONS. Lookup ID v ID_REGISTRY.md.');
+    if (del.meetings || del.workItems || del.migration || del.integration || del.testing || del.releaseTransport || del.operations) {
+      script += fr('10_DELIVERY', 'Popis operativni dorucovaci vrstvy projektu',
+        '# README -- slozka 10_DELIVERY\n\n## Ucel\n\nOperativni dorucovaci vrstva projektu. Obsah vznikajici pri kazdodenni praci tymu -- zapisy ze schuzek, work items a dalsi dorucovaci artefakty. Na rozdil od 00_PROJECT_CONTROL se meni casto.\n\n## Co sem patri\n\n- Zapisy ze schuzek a transkripty\n- Business Requests, FS, TS, Dev Tasks, Change Requests\n- Dorucovaci evidence (migrace, integrace, testovani)\n\n## Co sem nepatri\n\nStabilni ridici obsah patri do 00_PROJECT_CONTROL (business, architektura, standardy).\n\n## Pravidlo aktualizace\n\nZiva slozka -- meni se pri kazde session. Strukturalni zmeny se zapisuji do PROJECT_HISTORY.md pres /zvl_end-session.');
+    }
   }
 
   script += `
@@ -2177,8 +2161,6 @@ Write-Step "Krok 5/5 -- Verifikace..."
 $checks = @(
     (Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\01_BUSINESS\\BUSINESS.md"),
     (Join-Path $knowledgeRoot "00_PROJECT_CONTROL\\05_PLAN\\PLAN.md"),
-    (Join-Path $knowledgeRoot "CHANGELOG.md"),
-    (Join-Path $knowledgeRoot "EXECUTION_SNAPSHOT.md"),
     (Join-Path $knowledgeRoot "README.md"),
     (Join-Path $knowledgeRoot "PROJECT_STATUS.md"),
     (Join-Path $executionRoot "CONTEXT")${state.delivery.preset !== 'Minimal' ? `,
