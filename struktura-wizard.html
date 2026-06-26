@@ -887,10 +887,20 @@ function buildTree() {
       { name: '01_BUSINESS_REQUESTS', type: 'dir', children: [
         { name: 'BR-ALL.md', type: 'file' },
       ]},
-      { name: '02_FUNCTIONAL_SPECS', type: 'dir', children: [] },
-      { name: '03_TECHNICAL_SPECS', type: 'dir', children: [] },
+      { name: '02_FUNCTIONAL_SPECS', type: 'dir', children: [
+        { name: '_project', type: 'dir', children: [] },
+        { name: 'app01', type: 'dir', children: [] },
+      ]},
+      { name: '03_TECHNICAL_SPECS', type: 'dir', children: [
+        { name: '_project', type: 'dir', children: [] },
+        { name: 'app01', type: 'dir', children: [] },
+      ]},
       { name: '04_DEV_TASKS', type: 'dir', children: [] },
       { name: '05_CHANGE_REQUESTS', type: 'dir', children: [] },
+      { name: '06_OUTPUTS', type: 'dir', children: [
+        { name: 'DIAGRAMS', type: 'dir', children: [] },
+        { name: 'PRESENTATIONS', type: 'dir', children: [] },
+      ]},
       { name: 'README.md', type: 'file' },
     ]});
     if (del.migration) delivery.children.push({ name: '13_MIGRATION', type: 'dir', children: [
@@ -1052,9 +1062,12 @@ Vytvor nasledujici slozky:
   if (state.delivery.preset !== 'Minimal') {
     if (del.meetings) dirs.push('10_DELIVERY/11_MEETINGS');
     if (del.workItems) {
-      dirs.push('10_DELIVERY/12_WORK_ITEMS/01_BUSINESS_REQUESTS', '10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS',
-        '10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS', '10_DELIVERY/12_WORK_ITEMS/04_DEV_TASKS',
-        '10_DELIVERY/12_WORK_ITEMS/05_CHANGE_REQUESTS');
+      dirs.push('10_DELIVERY/12_WORK_ITEMS/01_BUSINESS_REQUESTS',
+        '10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS/_project', '10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS/app01',
+        '10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS/_project', '10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS/app01',
+        '10_DELIVERY/12_WORK_ITEMS/04_DEV_TASKS',
+        '10_DELIVERY/12_WORK_ITEMS/05_CHANGE_REQUESTS',
+        '10_DELIVERY/12_WORK_ITEMS/06_OUTPUTS/DIAGRAMS', '10_DELIVERY/12_WORK_ITEMS/06_OUTPUTS/PRESENTATIONS');
     }
     if (del.migration) {
       for (let i = 1; i <= 7; i++) dirs.push(`10_DELIVERY/13_MIGRATION/0${i}_${['SCOPE','OBJECTS','MAPPING','TEMPLATES','MOCK_LOADS','RECONCILIATION','CUTOVER'][i-1]}`);
@@ -1184,10 +1197,12 @@ ${state.delivery.preset !== 'Minimal' ? `| \`ID_REGISTRY.md\` | Lookup table pro
 | Hledam... | Kde najdu |
 |---|---|
 | Business pozadavky (BR/SP) | \`10_DELIVERY/12_WORK_ITEMS/01_BUSINESS_REQUESTS/\` |
-| Funkcni specifikace | \`10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS/\` |
-| Technicke specifikace | \`10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS/\` |
+| Funkcni specifikace | \`10_DELIVERY/12_WORK_ITEMS/02_FUNCTIONAL_SPECS/\` (multi-app: \`…/appNN/\` + \`_project/\`) |
+| Technicke specifikace | \`10_DELIVERY/12_WORK_ITEMS/03_TECHNICAL_SPECS/\` (multi-app: \`…/appNN/\` + \`_project/\`) |
 | Vyvojove ukoly | \`10_DELIVERY/12_WORK_ITEMS/04_DEV_TASKS/\` |
 | Change requesty | \`10_DELIVERY/12_WORK_ITEMS/05_CHANGE_REQUESTS/\` |
+| Diagramy (flowchart, architektura, HTML/SVG) | \`10_DELIVERY/12_WORK_ITEMS/06_OUTPUTS/DIAGRAMS/\` |
+| Prezentace (.pptx) | \`10_DELIVERY/12_WORK_ITEMS/06_OUTPUTS/PRESENTATIONS/\` |
 | Test case TC-NNN | \`10_DELIVERY/15_TESTING/02_TEST_CASES/TC-NNN_*.md\` |
 | Test runs | \`10_DELIVERY/15_TESTING/06_TEST_RUNS/\` |
 | Zapisy z jednani | \`10_DELIVERY/11_MEETINGS/\` |
@@ -1619,7 +1634,7 @@ function generatePowerShell() {
   if (state.delivery.preset !== 'Minimal') {
     if (del.meetings) dirs.push('10_DELIVERY\\11_MEETINGS');
     if (del.workItems) {
-      ['01_BUSINESS_REQUESTS','02_FUNCTIONAL_SPECS','03_TECHNICAL_SPECS','04_DEV_TASKS','05_CHANGE_REQUESTS'].forEach(d => dirs.push(`10_DELIVERY\\12_WORK_ITEMS\\${d}`));
+      ['01_BUSINESS_REQUESTS','02_FUNCTIONAL_SPECS\\_project','02_FUNCTIONAL_SPECS\\app01','03_TECHNICAL_SPECS\\_project','03_TECHNICAL_SPECS\\app01','04_DEV_TASKS','05_CHANGE_REQUESTS','06_OUTPUTS\\DIAGRAMS','06_OUTPUTS\\PRESENTATIONS'].forEach(d => dirs.push(`10_DELIVERY\\12_WORK_ITEMS\\${d}`));
     }
     if (del.migration) {
       ['01_SCOPE','02_OBJECTS','03_MAPPING','04_TEMPLATES','05_MOCK_LOADS','06_RECONCILIATION','07_CUTOVER'].forEach(d => dirs.push(`10_DELIVERY\\13_MIGRATION\\${d}`));
@@ -2111,7 +2126,7 @@ Write-Ok "NAMING_CONVENTIONS/README.md"
     if (del.meetings) script += fr('10_DELIVERY/11_MEETINGS', 'Popis slozky se zapisy ze schuzek',
       '# 11_MEETINGS -- Zapisy ze schuzek\n\n## Ucel\n\nVsechny zapisy ze schuzek projektu. Kazda schuzka ma vlastni slozku YYYY-MM-DD_<typ>, uvnitr primarni zapis a pripadne podklady.\n\n## Co sem patri\n\n- Primarni zapisy (meeting-note.md)\n- Transkripty a screenshoty navazane na schuzku\n\n## Co sem nepatri\n\n- Business Requests a work items -> 12_WORK_ITEMS\n- Trvale standardy a rozhodnuti -> 00_PROJECT_CONTROL\n\n## Konvence\n\nTypy: workshop, interni, skoleni, integracni-test, review. Body oznacene (BR) se propisuji do BR-ALL.md.');
     if (del.workItems) script += fr('10_DELIVERY/12_WORK_ITEMS', 'Popis backlogu pracovnich polozek',
-      '# 12_WORK_ITEMS -- Backlog pracovnich polozek\n\n## Ucel\n\nVsechny pracovni polozky projektu organizovane podle typu -- workflow od business pozadavku po realizaci.\n\n## Struktura\n\n| Slozka | Typ |\n|---|---|\n| 01_BUSINESS_REQUESTS | BR -- cisty textovy business vstup |\n| 02_FUNCTIONAL_SPECS | FS -- funkcni specifikace |\n| 03_TECHNICAL_SPECS | TS -- technicka specifikace, nese TASKy |\n| 04_DEV_TASKS | DEV -- dev artefakty / evidence |\n| 05_CHANGE_REQUESTS | CR -- zmenove pozadavky |\n\n## Workflow\n\nBR (vstup) -> FS (brainstorming) -> TS (writing-plans, TASKy ziji v TS) -> exekuce.\n\n## Konvence\n\nNaming dle 20_SHARED_REFERENCE/23_NAMING_CONVENTIONS. Lookup ID v ID_REGISTRY.md.');
+      '# 12_WORK_ITEMS -- Backlog pracovnich polozek\n\n## Ucel\n\nVsechny pracovni polozky projektu organizovane podle typu -- workflow od business pozadavku po realizaci.\n\n## Struktura\n\n| Slozka | Typ |\n|---|---|\n| 01_BUSINESS_REQUESTS | BR -- cisty textovy business vstup |\n| 02_FUNCTIONAL_SPECS | FS -- funkcni specifikace (multi-app: appNN/ + _project/) |\n| 03_TECHNICAL_SPECS | TS -- technicka specifikace, nese TASKy (multi-app: appNN/ + _project/) |\n| 04_DEV_TASKS | DEV -- dev artefakty / evidence |\n| 05_CHANGE_REQUESTS | CR -- zmenove pozadavky |\n| 06_OUTPUTS/DIAGRAMS | Diagramy (flowchart, architektura, HTML/SVG) |\n| 06_OUTPUTS/PRESENTATIONS | Prezentace (.pptx) |\n\n## Workflow\n\nBR (vstup) -> FS (brainstorming) -> TS (writing-plans, TASKy ziji v TS) -> exekuce.\n\n## Konvence\n\nNaming dle 20_SHARED_REFERENCE/23_NAMING_CONVENTIONS. Lookup ID v ID_REGISTRY.md.\nMulti-app projekt: FS (02_) a TS (03_) se cleni na podslozky per aplikace (appNN) + _project/ pro cross-app specs; BR zustavaji ploche (app v nazvu). Viz 22_STANDARDS/WORK_ITEM_MODEL.md.\nVystupni artefakty: diagramy -> 06_OUTPUTS/DIAGRAMS, prezentace (.pptx) -> 06_OUTPUTS/PRESENTATIONS. Cislo prefixu OUTPUTS = prvni volne v ramci 12_WORK_ITEMS (dle typu projektu; v teto standardni sablone 06). Spustitelne HTML diagramy se tvori v execution layer; do OUTPUTS patri finalni verze ke sdileni (kopie/export nebo .lnk zastupce).');
     if (del.meetings || del.workItems || del.migration || del.integration || del.testing || del.releaseTransport || del.operations) {
       script += fr('10_DELIVERY', 'Popis operativni dorucovaci vrstvy projektu',
         '# README -- slozka 10_DELIVERY\n\n## Ucel\n\nOperativni dorucovaci vrstva projektu. Obsah vznikajici pri kazdodenni praci tymu -- zapisy ze schuzek, work items a dalsi dorucovaci artefakty. Na rozdil od 00_PROJECT_CONTROL se meni casto.\n\n## Co sem patri\n\n- Zapisy ze schuzek a transkripty\n- Business Requests, FS, TS, Dev Tasks, Change Requests\n- Dorucovaci evidence (migrace, integrace, testovani)\n\n## Co sem nepatri\n\nStabilni ridici obsah patri do 00_PROJECT_CONTROL (business, architektura, standardy).\n\n## Pravidlo aktualizace\n\nZiva slozka -- meni se pri kazde session. Strukturalni zmeny se zapisuji do PROJECT_HISTORY.md pres /zvl_end-session.');

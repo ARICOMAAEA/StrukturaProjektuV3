@@ -50,7 +50,7 @@ It is a single self-contained HTML file (dark theme, inline SVG, no build step).
 │   └── 08_DEV/ExecutionLayer.lnk + README.md  -->  Execution Layer
 ├── 10_DELIVERY/README.md               (Standard+)
 │   ├── 11_MEETINGS/README.md
-│   ├── 12_WORK_ITEMS/01-05/ + README.md
+│   ├── 12_WORK_ITEMS/01_BR/ + 02_FS,03_TS/{_project,app01}/ + 04,05/ + 06_OUTPUTS/{DIAGRAMS,PRESENTATIONS} + README.md
 │   ├── 13_MIGRATION/01-07/            (Full only)
 │   ├── 14_INTEGRATION/01-04/          (Full only)
 │   ├── 15_TESTING/01-06/              (Full only)
